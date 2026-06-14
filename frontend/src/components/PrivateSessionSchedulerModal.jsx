@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { addCalendarSession } from '../utils/calendarStorage';
 
 export default function PrivateSessionSchedulerModal({ isOpen, onClose, onSchedule, candidateName }) {
   const [form, setForm] = useState({
@@ -38,12 +39,7 @@ export default function PrivateSessionSchedulerModal({ isOpen, onClose, onSchedu
       };
 
       try {
-        const saved = localStorage.getItem('bts_calendar_sessions');
-        const list = saved ? JSON.parse(saved) : [];
-        list.push(newSession);
-        localStorage.setItem('bts_calendar_sessions', JSON.stringify(list));
-        // Dispatch sync event
-        window.dispatchEvent(new Event('bts_calendar_sync'));
+        addCalendarSession(newSession);
       } catch (err) {
         console.error('Failed to sync session with calendar', err);
       }

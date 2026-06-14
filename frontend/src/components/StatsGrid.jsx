@@ -3,11 +3,11 @@ export default function StatsGrid() {
     <section className="grid grid-cols-4 gap-6 mb-8" data-purpose="summary-stats">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-50 flex items-start justify-between relative overflow-hidden">
         <div className="z-10">
-          <p className="text-xs font-bold text-gray-400 mb-2">Total BTS Credits</p>
+          <p className="text-xs font-bold text-gray-400 mb-2">BTS Credits Balance</p>
           <div className="mb-4">
             <span className="text-2xl font-extrabold">2,450.75</span>
             <span className="text-xs font-bold text-gray-400 ml-1 uppercase">BTS</span>
-            <p className="text-[10px] text-gray-400 font-medium">≈ $12,450.75 USD</p>
+            <p className="text-[10px] text-gray-400 font-medium">Redeemable platform credits</p>
           </div>
           <div className="flex items-center text-green-500 font-bold text-xs">
             <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path clipRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" fillRule="evenodd"></path></svg>
@@ -40,7 +40,7 @@ export default function StatsGrid() {
           <div className="mb-4">
             <span className="text-2xl font-extrabold">1,250.50</span>
             <span className="text-xs font-bold text-gray-400 ml-1 uppercase">BTS</span>
-            <p className="text-[10px] text-gray-400 font-medium">≈ $6,250.50 USD</p>
+            <p className="text-[10px] text-gray-400 font-medium">From D-Lancer missions</p>
           </div>
           <div className="flex items-center text-green-500 font-bold text-xs">
             <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path clipRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" fillRule="evenodd"></path></svg>
