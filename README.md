@@ -93,6 +93,59 @@ python app.py
 
 Open [http://localhost:5001](http://localhost:5001). Flask serves the React SPA and handles client-side routing via a catch-all route.
 
+## Deploy on Render
+
+`frontend/dist/` is **not committed** (gitignored). Render must **build the React app during deploy**, or Flask returns a 500 / internal error because `index.html` is missing.
+
+### Option A — Use `render.yaml` (recommended)
+
+1. Push this repo to GitHub.
+2. In [Render](https://render.com), create a **Blueprint** from the repo (it reads `render.yaml` automatically).
+
+### Option B — Manual Web Service settings
+
+Create a **Web Service** with:
+
+| Setting | Value |
+| :--- | :--- |
+| **Runtime** | Python |
+| **Root Directory** | *(leave empty — repo root)* |
+| **Build Command** | `chmod +x build.sh && ./build.sh` |
+| **Start Command** | `gunicorn app:app --bind 0.0.0.0:$PORT` |
+
+**Environment variables** (Render dashboard → Environment):
+
+| Key | Value |
+| :--- | :--- |
+| `NODE_VERSION` | `20` |
+| `PYTHON_VERSION` | `3.12.0` |
+
+`NODE_VERSION` is required so Render installs Node.js and `npm run build` works during the build step.
+
+### What the build does
+
+`build.sh` runs:
+
+1. `pip install -r requirements.txt` (Flask + gunicorn)
+2. `cd frontend && npm ci && npm run build` → creates `frontend/dist/`
+
+### Verify locally before deploying
+
+```bash
+chmod +x build.sh
+./build.sh
+gunicorn app:app --bind 0.0.0.0:5001
+```
+
+Open [http://localhost:5001](http://localhost:5001). If that works, Render should work with the same build/start commands.
+
+### Render internal error checklist
+
+- **Build Command missing or wrong** — must include `npm run build` in `frontend/`
+- **`NODE_VERSION` not set** — npm step fails silently or is skipped
+- **Start Command is `python app.py`** — use `gunicorn` on Render instead
+- **Wrong root directory** — must be the folder that contains `app.py` and `frontend/`
+
 ## Available Scripts
 
 Run these from the `frontend/` directory:
@@ -109,6 +162,8 @@ Run these from the `frontend/` directory:
 ```
 bitstack_dashboard/
 ├── app.py                  # Flask server (serves frontend/dist)
+├── build.sh                # Render/production build script
+├── render.yaml             # Render Blueprint config
 ├── requirements.txt        # Python dependencies
 ├── SUBMISSION_GUIDE.md     # d-Library publishing guide
 ├── frontend/

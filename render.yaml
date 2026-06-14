@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: bitstack-dashboard
+    runtime: python
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: PYTHON_VERSION
+        value: "3.12.0"
