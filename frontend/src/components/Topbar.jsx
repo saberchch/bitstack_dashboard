@@ -59,7 +59,7 @@ export default function Topbar({ searchPlaceholder = "Search anything...", onSea
           </div>
           <div>
             <p className="text-[10px] text-gray-400 font-bold uppercase leading-none">BTS Balance</p>
-            <p className="text-sm font-extrabold text-brand-dark">2,450.75 <span className="text-[10px] text-gray-400">BTS</span></p>
+            <p className="text-sm font-extrabold text-brand-dark">{(profile.balance || 0).toLocaleString()} <span className="text-[10px] text-gray-400">BTS</span></p>
           </div>
         </div>
         {/* Notification Bell */}

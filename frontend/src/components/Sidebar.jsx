@@ -1,18 +1,56 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { getNotifications } from '../utils/notificationsStorage';
+import { getConversations } from '../utils/messagesStorage';
+import { getProfile } from '../utils/profileStorage';
+import { clearAllLocalData } from '../utils/sync';
 
 export default function Sidebar() {
   const [unreadCount, setUnreadCount] = useState(0);
+  const [messagesUnread, setMessagesUnread] = useState(0);
+  const [profile, setProfile] = useState(() => getProfile());
+  const [isOffline, setIsOffline] = useState(() => localStorage.getItem('bts_offline_mode') === 'true');
+
+  useEffect(() => {
+    const handleOfflineChange = (e) => {
+      setIsOffline(e.detail);
+    };
+    window.addEventListener('bts_offline_mode_change', handleOfflineChange);
+    return () => {
+      window.removeEventListener('bts_offline_mode_change', handleOfflineChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleProfileChange = (e) => {
+      setProfile(e.detail);
+    };
+    window.addEventListener('bts_profile_change', handleProfileChange);
+    return () => {
+      window.removeEventListener('bts_profile_change', handleProfileChange);
+    };
+  }, []);
 
   useEffect(() => {
     const updateCount = () => {
       const list = getNotifications();
       setUnreadCount(list.filter(n => !n.read).length);
     };
+    const updateMessagesCount = () => {
+      const convos = getConversations();
+      const sum = convos.reduce((acc, c) => acc + (c.unread || 0), 0);
+      setMessagesUnread(sum);
+    };
+
     updateCount();
+    updateMessagesCount();
+
     window.addEventListener('bts_notifications_change', updateCount);
-    return () => window.removeEventListener('bts_notifications_change', updateCount);
+    window.addEventListener('bts_conversations_change', updateMessagesCount);
+    return () => {
+      window.removeEventListener('bts_notifications_change', updateCount);
+      window.removeEventListener('bts_conversations_change', updateMessagesCount);
+    };
   }, []);
 
   const navLinkClass = ({ isActive }) =>
@@ -57,10 +95,18 @@ export default function Sidebar() {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
           d-Library
         </NavLink>
-        <NavLink to="/bts-credit" className={navLinkClass}>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
-          BTS Credit
-        </NavLink>
+        {profile.profileType === 'Student' && (
+          <NavLink to="/bts-credit" className={navLinkClass}>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+            BTS Credit
+          </NavLink>
+        )}
+        {profile.profileType === 'Mentor' && (
+          <NavLink to="/mentor/availability" className={navLinkClass}>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+            Availability
+          </NavLink>
+        )}
         {/* Separator */}
         <div className="py-4">
           <div className="border-t border-gray-100"></div>
@@ -72,7 +118,9 @@ export default function Sidebar() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
             Messages
           </div>
-          <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">5</span>
+          {messagesUnread > 0 && (
+            <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">{messagesUnread}</span>
+          )}
         </NavLink>
         <NavLink to="/notifications" className={({ isActive }) =>
           `flex items-center justify-between px-4 py-3 rounded-custom text-sm font-semibold transition-colors ${isActive ? 'sidebar-active' : 'text-gray-500 hover:bg-gray-50'
@@ -92,14 +140,31 @@ export default function Sidebar() {
         </NavLink>
         {/* Bottom Actions */}
         <div className="pt-8 space-y-1">
+          {/* Status Indicator */}
+          <div className="px-4 py-2.5 mb-2 rounded-xl border border-gray-100 bg-gray-50 flex items-center justify-between text-[10px] font-bold">
+            <span className="text-gray-400 uppercase tracking-wider">Node</span>
+            <div className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${isOffline ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`} />
+              <span className={isOffline ? 'text-yellow-600' : 'text-green-600'}>
+                {isOffline ? 'Mock Mode' : 'Connected'}
+              </span>
+            </div>
+          </div>
+
           <NavLink to="/profile" className={navLinkClass}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
             Profile
           </NavLink>
-          <a className="flex items-center gap-3 px-4 py-3 rounded-custom text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors" href="#">
+          <button 
+            onClick={async () => {
+              await clearAllLocalData();
+              window.location.reload();
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-custom text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
             Logout
-          </a>
+          </button>
         </div>
       </nav>
     </aside>

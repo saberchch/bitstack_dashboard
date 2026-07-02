@@ -1,0 +1,426 @@
+{
+  "missions": [
+    {
+      "id": "smart-contract-audit",
+      "title": "Smart Contract Security Audit",
+      "description": "Full security audit of a DeFi lending protocol built on Solidity. Identify reentrancy vulnerabilities, front-running risks, and gas optimization issues.",
+      "tags": ["Web3", "Security", "Solidity"],
+      "reward": 1200,
+      "deadline": 14,
+      "teamSize": 2,
+      "appliedCount": 1,
+      "difficulty": "Expert",
+      "client": "DeFi Nexus",
+      "postedDays": 2,
+      "clientAvatar": "https://ui-avatars.com/api/?name=DeFi+Nexus&background=0b1121&color=d4a017&size=40&font-size=0.4",
+      "status": "Open",
+      "milestones": [],
+      "milestoneAmounts": [],
+      "milestoneStatus": [],
+      "milestoneReleased": [],
+      "escrowLocked": false,
+      "escrowReleasedAmount": 0,
+      "proposals": [
+        { "id": "p1", "name": "Alex R.", "role": "Solidity Auditor", "bid": 1100, "rating": 4.8, "status": "pending" },
+        { "id": "p2", "name": "Maria K.", "role": "Security Researcher", "bid": 1200, "rating": 4.9, "status": "pending" }
+      ],
+      "submissions": [],
+      "reviews": [],
+      "thumbnail": "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=250&fit=crop",
+      "deliverables": ["Security audit report", "Vulnerability list with severity ratings", "Remediation recommendations", "Gas optimization suggestions"],
+      "faqs": [
+        { "q": "What Solidity version is used?", "a": "The protocol uses Solidity 0.8.20 with OpenZeppelin libraries." },
+        { "q": "Will test coverage be required?", "a": "Yes, we expect at least 90% test coverage as part of the audit." }
+      ]
+    },
+    {
+      "id": "ai-oracle-integration",
+      "title": "AI Oracle Integration for NFT Pricing",
+      "description": "Build a Chainlink-compatible AI oracle that dynamically prices NFT assets using ML models trained on historical sales data.",
+      "tags": ["AI/ML", "Web3", "Python"],
+      "reward": 2500,
+      "deadline": 21,
+      "teamSize": 3,
+      "appliedCount": 2,
+      "difficulty": "Advanced",
+      "client": "MetaArts DAO",
+      "postedDays": 5,
+      "clientAvatar": "https://ui-avatars.com/api/?name=MetaArts+DAO&background=7c3aed&color=ffffff&size=40&font-size=0.4",
+      "status": "In Progress",
+      "milestones": [
+        { "title": "Milestone 1: Project Initiation / Down Payment", "expectations": "Review ML model training set constraints & feature vectors.", "days": 7 },
+        { "title": "Milestone 2: Chainlink Adapter integration", "expectations": "Demo smart contract callbacks on testnet via screen-share call.", "days": 7 },
+        { "title": "Milestone 3: Active deploy & tests suite", "expectations": "Final system run check with mainnet-fork simulations.", "days": 7 }
+      ],
+      "milestoneAmounts": [250, 1125, 1125],
+      "milestoneDays": [7, 7, 7],
+      "milestoneStatus": ["completed", "pending", "pending"],
+      "milestoneReleased": [true, false, false],
+      "escrowLocked": true,
+      "escrowReleasedAmount": 250,
+      "proposals": [
+        { "id": "p3", "name": "Jin L.", "role": "ML Engineer", "bid": 2400, "rating": 4.7, "status": "accepted" },
+        { "id": "p4", "name": "Samuel A.", "role": "Web3 Dev", "bid": 2500, "rating": 5.0, "status": "pending" }
+      ],
+      "activeContract": { "freelancerName": "Jin L.", "freelancerRole": "ML Engineer", "bid": 2400, "startedAt": "2026-06-01" },
+      "submissions": [{ "id": "s1", "title": "ML Model v1", "submittedBy": "Jin L.", "date": "Jun 1", "status": "pending" }],
+      "reviews": [{ "author": "MetaArts DAO", "text": "Strong start, looking forward to the next milestone.", "rating": 4 }],
+      "thumbnail": "https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=400&h=250&fit=crop",
+      "deliverables": ["Trained ML pricing model", "Chainlink adapter contract", "On-chain deployment scripts", "Test suite and QA report"],
+      "faqs": [
+        { "q": "What ML framework should be used?", "a": "We prefer Python with scikit-learn or PyTorch for the pricing model." }
+      ]
+    },
+    {
+      "id": "rust-blockchain-node",
+      "title": "Custom Rust Blockchain Node",
+      "description": "Develop a lightweight, high-performance layer-1 blockchain node in Rust with PBFT consensus, P2P networking, and a JSON-RPC API.",
+      "tags": ["Rust", "Blockchain", "Networking"],
+      "reward": 4000,
+      "deadline": 45,
+      "teamSize": 4,
+      "appliedCount": 3,
+      "difficulty": "Expert",
+      "client": "ChainForge Labs",
+      "postedDays": 1,
+      "clientAvatar": "https://ui-avatars.com/api/?name=ChainForge&background=1d4ed8&color=ffffff&size=40&font-size=0.4",
+      "status": "Open",
+      "milestones": [],
+      "milestoneAmounts": [],
+      "milestoneStatus": [],
+      "milestoneReleased": [],
+      "escrowLocked": false,
+      "escrowReleasedAmount": 0,
+      "proposals": [{ "id": "p5", "name": "Tobias W.", "role": "Rust Systems Eng.", "bid": 3800, "rating": 4.9, "status": "pending" }],
+      "submissions": [],
+      "reviews": [],
+      "thumbnail": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=250&fit=crop",
+      "deliverables": ["PBFT consensus engine", "P2P networking module", "JSON-RPC API", "Documentation and benchmarks"],
+      "faqs": [
+        { "q": "Is there an existing codebase?", "a": "No, this is a greenfield project. We provide architecture specs." },
+        { "q": "What performance targets are expected?", "a": "Target: 1000 TPS minimum on testnet with 4-node consensus." }
+      ]
+    },
+    {
+      "id": "defi-dashboard-ui",
+      "title": "DeFi Portfolio Dashboard UI",
+      "description": "Design and build a Web3 portfolio tracker with real-time price feeds, wallet connection (RainbowKit), and interactive chart visualizations.",
+      "tags": ["UI/UX", "Web3", "React"],
+      "reward": 900,
+      "deadline": 10,
+      "teamSize": 2,
+      "appliedCount": 1,
+      "difficulty": "Intermediate",
+      "client": "BlockWave Inc.",
+      "postedDays": 3,
+      "clientAvatar": "https://ui-avatars.com/api/?name=BlockWave&background=d4a017&color=0b1121&size=40&font-size=0.4",
+      "status": "In Review",
+      "milestones": [
+        { "title": "Milestone 1: Project Initiation / Down Payment", "expectations": "Review Figma project frames & styling system parameters.", "days": 3 },
+        { "title": "Milestone 2: Functional layout prototype", "expectations": "Review dynamic UI animations & wallet connects.", "days": 4 }
+      ],
+      "milestoneAmounts": [90, 810],
+      "milestoneDays": [3, 4],
+      "milestoneStatus": ["completed", "completed"],
+      "milestoneReleased": [true, true],
+      "escrowLocked": true,
+      "escrowReleasedAmount": 90,
+      "proposals": [{ "id": "p6", "name": "Chloe M.", "role": "UI/UX Designer", "bid": 880, "rating": 4.8, "status": "accepted" }],
+      "activeContract": { "freelancerName": "Chloe M.", "freelancerRole": "UI/UX Designer", "bid": 880, "startedAt": "2026-05-20" },
+      "submissions": [{ "id": "s2", "title": "Dashboard v1.0", "submittedBy": "Chloe M.", "date": "Jun 5", "status": "pending" }],
+      "reviews": [{ "author": "BlockWave Inc.", "text": "Clean design, minor revisions needed on mobile layout.", "rating": 4 }],
+      "thumbnail": "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop",
+      "deliverables": ["Figma design files", "React component library", "Wallet integration", "Charts implementation"],
+      "faqs": [
+        { "q": "Which chains need to be supported?", "a": "Ethereum mainnet and Polygon initially." }
+      ]
+    },
+    {
+      "id": "python-trading-bot",
+      "title": "Automated DeFi Arbitrage Bot",
+      "description": "Python-based arbitrage trading bot that monitors multiple DEXes (Uniswap, Curve, Balancer) and executes flash-loan strategies.",
+      "tags": ["Python", "DeFi", "Automation"],
+      "reward": 1800,
+      "deadline": 28,
+      "teamSize": 2,
+      "appliedCount": 0,
+      "difficulty": "Advanced",
+      "client": "AlphaYield",
+      "postedDays": 7,
+      "clientAvatar": "https://ui-avatars.com/api/?name=AlphaYield&background=059669&color=ffffff&size=40&font-size=0.4",
+      "status": "Open",
+      "milestones": [],
+      "milestoneAmounts": [],
+      "milestoneStatus": [],
+      "milestoneReleased": [],
+      "escrowLocked": false,
+      "escrowReleasedAmount": 0,
+      "proposals": [],
+      "submissions": [],
+      "reviews": [],
+      "thumbnail": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop",
+      "deliverables": ["Arbitrage bot source code", "DEX monitoring module", "Flash-loan integration", "Deployment guide"],
+      "faqs": [
+        { "q": "What is the expected ROI target?", "a": "We expect at least 2-5% monthly returns from arbitrage." }
+      ]
+    },
+    {
+      "id": "tokenomics-design",
+      "title": "Tokenomics & Whitepaper Design",
+      "description": "Comprehensive tokenomics for a new GameFi project including emission schedules, staking mechanics, governance model, and whitepaper.",
+      "tags": ["Strategy", "GameFi", "Economics"],
+      "reward": 750,
+      "deadline": 12,
+      "teamSize": 1,
+      "appliedCount": 0,
+      "difficulty": "Intermediate",
+      "client": "PixelRealm",
+      "postedDays": 4,
+      "clientAvatar": "https://ui-avatars.com/api/?name=PixelRealm&background=db2777&color=ffffff&size=40&font-size=0.4",
+      "status": "Open",
+      "milestones": [],
+      "milestoneAmounts": [],
+      "milestoneStatus": [],
+      "milestoneReleased": [],
+      "escrowLocked": false,
+      "escrowReleasedAmount": 0,
+      "proposals": [],
+      "submissions": [],
+      "reviews": [],
+      "thumbnail": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=250&fit=crop",
+      "deliverables": ["Token emission schedule", "Staking mechanics document", "Governance model", "Full whitepaper PDF"],
+      "faqs": [
+        { "q": "What type of game is this for?", "a": "A play-to-earn RPG with land ownership and resource management." }
+      ]
+    },
+    {
+      "id": "zk-proof-verifier",
+      "title": "ZK-Proof Verifier Smart Contract",
+      "description": "Implement an on-chain zero-knowledge proof verifier using the Groth16 scheme for a privacy-preserving voting protocol.",
+      "tags": ["Web3", "Security", "Solidity"],
+      "reward": 3200,
+      "deadline": 30,
+      "teamSize": 2,
+      "appliedCount": 1,
+      "difficulty": "Expert",
+      "client": "ZeroVault",
+      "postedDays": 0,
+      "clientAvatar": "https://ui-avatars.com/api/?name=ZeroVault&background=312e81&color=a5b4fc&size=40&font-size=0.4",
+      "status": "Open",
+      "milestones": [],
+      "milestoneAmounts": [],
+      "milestoneStatus": [],
+      "milestoneReleased": [],
+      "escrowLocked": false,
+      "escrowReleasedAmount": 0,
+      "proposals": [{ "id": "p7", "name": "Hamid R.", "role": "ZK Engineer", "bid": 3000, "rating": 5.0, "status": "pending" }],
+      "submissions": [],
+      "reviews": [],
+      "thumbnail": "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&h=250&fit=crop",
+      "deliverables": ["Groth16 verifier contract", "Circuit implementation", "On-chain integration guide", "Security test suite"],
+      "faqs": [
+        { "q": "Will the circuit design be provided?", "a": "Yes, we will supply the circuit constraints. You implement the on-chain verifier." }
+      ]
+    },
+    {
+      "id": "cross-chain-bridge-api",
+      "title": "Cross-Chain Bridge API",
+      "description": "Build a production REST + WebSocket API for a cross-chain asset bridge supporting EVM, Solana, and Cosmos. Milestone 3 focuses on the routing layer that selects optimal paths and quotes fees across chains.",
+      "tags": ["Web3", "Rust", "Networking"],
+      "reward": 2700,
+      "deadline": 35,
+      "teamSize": 1,
+      "appliedCount": 1,
+      "difficulty": "Expert",
+      "client": "BridgeLink Protocol",
+      "postedDays": 12,
+      "clientAvatar": "https://ui-avatars.com/api/?name=BridgeLink&background=0b1121&color=d4a017&size=40&font-size=0.4",
+      "status": "In Progress",
+      "milestones": [
+        { "title": "Milestone 1: Project Initiation / Down Payment", "expectations": "Show workspace environment setup and routing schema parameters.", "days": 7 },
+        { "title": "Milestone 2: Routing simulation runs", "expectations": "Verify fee quoting logic with IBC path simulations.", "days": 10 },
+        { "title": "Milestone 3: Live demo deployment test", "expectations": "Verify production bridge WebSocket endpoints via private sync call.", "days": 14 }
+      ],
+      "milestoneAmounts": [270, 1215, 1215],
+      "milestoneDays": [7, 10, 14],
+      "milestoneStatus": ["completed", "pending", "pending"],
+      "milestoneReleased": [true, false, false],
+      "escrowLocked": true,
+      "escrowReleasedAmount": 270,
+      "disputeActive": false,
+      "myProgress": 33,
+      "myMilestone": "Routing simulation runs",
+      "isMyActiveWork": true,
+      "proposals": [
+        {
+          "id": "p-you-bridge",
+          "name": "You",
+          "role": "Full-Stack Web3 Developer",
+          "bid": 2700,
+          "rating": 5.0,
+          "status": "accepted",
+          "coverLetter": "I have shipped two cross-chain routers on mainnet. Ready to deliver the routing layer next."
+        }
+      ],
+      "activeContract": {
+        "freelancerName": "You",
+        "freelancerRole": "Full-Stack Web3 Developer",
+        "bid": 2700,
+        "startedAt": "2026-05-28"
+      },
+      "submissions": [
+        {
+          "id": "sub-bridge-m1",
+          "title": "Bridge Architecture & OpenAPI Spec",
+          "link": "https://github.com/example/bridge-spec",
+          "notes": "Full OpenAPI 3.1 spec with sequence diagrams for deposit/withdraw flows.",
+          "submittedBy": "You",
+          "date": "Jun 2",
+          "status": "approved",
+          "milestoneIndex": 0
+        }
+      ],
+      "messages": [
+        { "from": "client", "name": "BridgeLink Protocol", "text": "Great work on modules 1 and 2. For milestone 3, prioritize fee quoting accuracy across Cosmos IBC routes.", "time": "1d ago" },
+        { "from": "you", "name": "You", "text": "Understood — I will include IBC path simulation and expose /quote endpoints in the routing layer deliverable.", "time": "1d ago" }
+      ],
+      "reviews": [],
+      "thumbnail": "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=250&fit=crop",
+      "deliverables": ["OpenAPI specification", "Core bridge modules", "Cross-chain routing layer", "Deployment documentation"],
+      "faqs": [
+        { "q": "What chains are in scope?", "a": "EVM chains (Ethereum, Polygon, BSC), Solana, and Cosmos via IBC." }
+      ]
+    }
+  ],
+  "myPosts": [
+    {
+      "id": "my-post-dao-governance",
+      "title": "DAO Governance Dashboard",
+      "description": "Build a real-time governance dashboard for our DAO, showing active proposals, voting power distribution, and historical vote outcomes.",
+      "tags": ["Web3", "React", "UI/UX"],
+      "reward": 1600,
+      "deadline": 18,
+      "teamSize": 3,
+      "appliedCount": 2,
+      "difficulty": "Advanced",
+      "client": "You",
+      "postedDays": 3,
+      "clientAvatar": "https://ui-avatars.com/api/?name=You&background=d4a017&color=0b1121&size=40",
+      "status": "Open",
+      "milestones": [],
+      "milestoneAmounts": [],
+      "milestoneStatus": [],
+      "milestoneReleased": [],
+      "escrowLocked": false,
+      "escrowReleasedAmount": 0,
+      "disputeActive": false,
+      "proposals": [
+        { "id": "mp1", "name": "Rami T.", "role": "Full-Stack Dev", "bid": 1500, "rating": 4.6, "status": "pending" },
+        { "id": "mp2", "name": "Selin K.", "role": "React Engineer", "bid": 1600, "rating": 4.8, "status": "pending" }
+      ],
+      "submissions": [],
+      "reviews": [],
+      "isMyPost": true,
+      "thumbnail": "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop",
+      "deliverables": ["Real-time proposal feed", "Voting power chart", "Historical vote explorer", "DAO analytics dashboard"],
+      "faqs": [
+        { "q": "Which DAO protocol is this for?", "a": "Compound Governor Bravo compatible protocol." }
+      ]
+    },
+    {
+      "id": "my-post-wallet-sdk",
+      "title": "Multi-Chain Wallet SDK",
+      "description": "Develop a TypeScript SDK that abstracts multi-chain wallet interactions, supporting EVM, Solana, and Cosmos chains with a unified API.",
+      "tags": ["Web3", "Rust", "Solidity"],
+      "reward": 3500,
+      "deadline": 40,
+      "teamSize": 2,
+      "appliedCount": 1,
+      "difficulty": "Expert",
+      "client": "You",
+      "postedDays": 8,
+      "clientAvatar": "https://ui-avatars.com/api/?name=You&background=d4a017&color=0b1121&size=40",
+      "status": "In Progress",
+      "milestones": [
+        { "title": "Milestone 1: Project Initiation / Down Payment", "expectations": "Review TypeScript setup configs & basic adapters.", "days": 10 },
+        { "title": "Milestone 2: Solana module integration", "expectations": "Show active mock routing connection verification via call.", "days": 14 }
+      ],
+      "milestoneAmounts": [350, 3150],
+      "milestoneDays": [10, 14],
+      "milestoneStatus": ["completed", "pending"],
+      "milestoneReleased": [true, false],
+      "escrowLocked": true,
+      "escrowReleasedAmount": 350,
+      "disputeActive": false,
+      "proposals": [
+        { "id": "mp3", "name": "Diego F.", "role": "SDK Engineer", "bid": 3400, "rating": 5.0, "status": "accepted" }
+      ],
+      "activeContract": { "freelancerName": "Diego F.", "freelancerRole": "SDK Engineer", "bid": 3400, "startedAt": "2026-05-25" },
+      "submissions": [{ "id": "ms1", "title": "EVM Module v1", "submittedBy": "Diego F.", "date": "Jun 3", "status": "approved" }],
+      "reviews": [],
+      "isMyPost": true,
+      "thumbnail": "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=250&fit=crop",
+      "deliverables": ["EVM wallet module", "Solana adapter", "Cosmos IBC adapter", "TypeScript documentation"],
+      "faqs": [
+        { "q": "What is the target npm package size?", "a": "Under 50kb gzipped. Tree-shakeable is a must." }
+      ]
+    }
+  ],
+  "archive": [
+    {
+      "id": "nft-marketplace-backend",
+      "role": "freelancer",
+      "title": "NFT Marketplace REST API",
+      "description": "High-performance Node.js + PostgreSQL backend for an NFT marketplace with lazy minting, auction support, and royalty enforcement.",
+      "tags": ["Web3", "Python", "Networking"],
+      "reward": 1500,
+      "earnedBts": 1400,
+      "completedDate": "May 30, 2024",
+      "myRating": 5,
+      "client": "ArtChain",
+      "clientAvatar": "https://ui-avatars.com/api/?name=ArtChain&background=0d9488&color=ffffff&size=40&font-size=0.4",
+      "difficulty": "Advanced",
+      "thumbnail": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=250&fit=crop",
+      "reviews": [{ "author": "ArtChain", "text": "Excellent work, delivered ahead of schedule!", "rating": 5 }],
+      "milestones": ["API design", "Auth & minting", "Auction engine", "Royalty logic"],
+      "teamSize": 3
+    },
+    {
+      "id": "my-closed-token-audit",
+      "role": "creator",
+      "title": "Token Contract Audit (Closed)",
+      "description": "Audit of our ERC-20 token before mainnet launch. Completed successfully.",
+      "tags": ["Web3", "Security"],
+      "reward": 800,
+      "spentBts": 800,
+      "completedDate": "Apr 15, 2024",
+      "freelancer": "Omar S.",
+      "freelancerRating": 5,
+      "difficulty": "Advanced",
+      "client": "You",
+      "clientAvatar": "https://ui-avatars.com/api/?name=You&background=d4a017&color=0b1121&size=40",
+      "thumbnail": "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=250&fit=crop",
+      "milestones": ["Smart contract review", "Report compilation"],
+      "teamSize": 1
+    }
+  ],
+  "recentActivity": [
+    { "id": "a1", "type": "milestone_approved", "text": "Milestone 2 approved for Cross-Chain Bridge API", "time": "2 hours ago", "missionId": "cross-chain-bridge-api" },
+    { "id": "a2", "type": "message", "text": "New message from BridgeLink Protocol", "time": "1 day ago", "missionId": "cross-chain-bridge-api" },
+    { "id": "a3", "type": "interest", "text": "New interested freelancer for DAO Governance Dashboard", "time": "2 days ago", "missionId": "my-post-dao-governance" },
+    { "id": "a4", "type": "payment", "text": "◈ 270 BTS released — Bridge Down Payment", "time": "3 days ago", "missionId": "cross-chain-bridge-api" },
+    { "id": "a5", "type": "review", "text": "New review from MetaArts DAO — 4/5 stars", "time": "4 days ago", "missionId": "ai-oracle-integration" }
+  ],
+  "categories": [
+    { "key": "all", "label": "All Missions", "emoji": "◈" },
+    { "key": "AI/ML", "label": "AI & ML", "emoji": "🤖" },
+    { "key": "Security", "label": "Cybersecurity", "emoji": "🛡️" },
+    { "key": "UI/UX", "label": "Design & UX", "emoji": "🎨" },
+    { "key": "React", "label": "Frontend Dev", "emoji": "⚛️" },
+    { "key": "Python", "label": "Python / Data", "emoji": "🐍" },
+    { "key": "Rust", "label": "Systems / Rust", "emoji": "⚙️" },
+    { "key": "Strategy", "label": "Strategy & PM", "emoji": "📊" },
+    { "key": "Web3", "label": "Web3", "emoji": "⛓️" }
+  ],
+  "skills": ["Web3", "Security", "Rust", "AI/ML", "UI/UX", "Python", "Solidity", "React", "DeFi", "Strategy"]
+}

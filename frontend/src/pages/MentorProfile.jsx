@@ -8,7 +8,7 @@ import { REVIEW_ENTITY_TYPES } from '../utils/reviewsStorage';
 
 export default function MentorProfile() {
   const { id } = useParams();
-  const mentor = mentors.find(m => m.id === id);
+  const mentor = mentors.find(m => m.id.toLowerCase() === id.toLowerCase());
 
   const [selectedDay, setSelectedDay] = useState(3);
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -379,6 +379,76 @@ export default function MentorProfile() {
             })}
           </div>
         </section>
+
+        {/* Shared Resources & Posted Missions */}
+        {((mentor.resources && mentor.resources.length > 0) || (mentor.missions && mentor.missions.length > 0)) && (
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Shared Resources */}
+            {mentor.resources && mentor.resources.length > 0 && (
+              <div className="bg-white border border-gray-100 rounded-2xl p-6 md:p-8 shadow-sm flex flex-col justify-between">
+                <div>
+                  <h3 className="text-lg font-extrabold text-brand-dark mb-5 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-bts-gold">folder_open</span>
+                    Shared Resources
+                  </h3>
+                  <div className="space-y-3">
+                    {mentor.resources.map((res, index) => (
+                      <div key={index} className="flex items-center justify-between p-3.5 bg-gray-50 border border-gray-100 rounded-xl hover:border-bts-gold/20 hover:bg-yellow-50/10 transition-all group">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-yellow-50 text-bts-gold flex items-center justify-center rounded-lg border border-yellow-100 group-hover:bg-bts-gold group-hover:text-white group-hover:border-bts-gold transition-colors">
+                            <span className="material-symbols-outlined !text-[20px]">description</span>
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-brand-dark truncate max-w-[200px] md:max-w-xs">{res.title}</p>
+                            <p className="text-[10px] text-gray-400 font-bold mt-0.5 uppercase tracking-wider">{res.type} · {res.size} · {res.downloads} downloads</p>
+                          </div>
+                        </div>
+                        <button className="p-2 text-gray-400 hover:text-bts-gold hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer">
+                          <span className="material-symbols-outlined !text-[18px]">download</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Posted Missions */}
+            {mentor.missions && mentor.missions.length > 0 && (
+              <div className="bg-white border border-gray-100 rounded-2xl p-6 md:p-8 shadow-sm flex flex-col justify-between">
+                <div>
+                  <h3 className="text-lg font-extrabold text-brand-dark mb-5 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-bts-gold">work_outline</span>
+                    Posted Missions
+                  </h3>
+                  <div className="space-y-3">
+                    {mentor.missions.map((mis, index) => (
+                      <div key={index} className="p-4 border border-gray-100 rounded-xl hover:border-bts-gold/20 transition-all flex flex-col justify-between h-fit">
+                        <div>
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <h4 className="font-extrabold text-xs text-brand-dark">{mis.title}</h4>
+                            <span className="shrink-0 bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded text-[9px] font-extrabold tracking-wider">{mis.budget}</span>
+                          </div>
+                          <p className="text-[11px] text-gray-400 mb-3 line-clamp-2">{mis.description}</p>
+                        </div>
+                        <div className="flex justify-between items-center border-t border-gray-50 pt-3">
+                          <span className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
+                            <span className="material-symbols-outlined !text-[12px]">schedule</span>
+                            {mis.duration}
+                          </span>
+                          <Link to="/d-lancer" className="text-[10px] font-extrabold text-bts-gold hover:underline flex items-center gap-0.5">
+                            Apply Mission
+                            <span className="material-symbols-outlined !text-xs">arrow_forward</span>
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* History / Testimonials & Feedback */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">

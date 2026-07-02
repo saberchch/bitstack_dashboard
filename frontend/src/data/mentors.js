@@ -1,5 +1,114 @@
 export const mentors = [
   {
+    id: "BTS-MENTOR-001",
+    name: "Alice Mentor",
+    role: "Senior Smart Contract Auditor & Cryptography Researcher",
+    avatar: "/alice_avatar.png",
+    rate: 80,
+    rating: 5.0,
+    sessions: 112,
+    experience: "9 Years",
+    skills: ["Cryptography", "Smart Contracts", "ZK-Proofs", "Solidity", "Rust"],
+    school: "MIT",
+    level: "Expert",
+    modules: ["ZK-Proofs", "Cryptography", "Smart Contracts"],
+    goals: ["Project coaching", "Exam prep"],
+    language: "English",
+    verified: true,
+    availability: ["Weekday Morning", "Weekday Evening"],
+    bio: "Lead Auditor and Cryptography Researcher. Specializing in zero-knowledge scaling systems and smart contract security.",
+    about: "Alice Mentor is a veteran protocol security specialist and cryptographer. She has audited dozens of high-profile Ethereum protocols and researched pairing-friendly elliptic curves and zk-SNARK constraints. Passionate about mentoring protocol engineers.",
+    timeline: [
+      {
+        year: "2023 — Present",
+        title: "Principal Cryptography Researcher @ Bitstacks Labs",
+        description: "Designing recursive proof verification systems and auditing EVM-compatible rollup circuits."
+      },
+      {
+        year: "2020 — 2023",
+        title: "Senior Smart Contract Auditor @ OpenZeppelin",
+        description: "Led auditing teams for major DeFi protocols, securing assets worth over $2B."
+      }
+    ],
+    timezone: "Europe/Paris",
+    slots: [
+      { time: "09:00 AM CET", available: true },
+      { time: "11:30 AM CET", available: true },
+      { time: "02:00 PM CET", available: true },
+      { time: "04:30 PM CET", available: false }
+    ],
+    workshops: [
+      {
+        sessionId: "intro-zkp",
+        title: "Zero-Knowledge Circuit Design & Optimization",
+        level: "ADVANCED",
+        date: "July 10",
+        duration: "3.0 Hours",
+        buttonText: "Enroll: 180 BTS",
+        actionType: "enroll",
+        attendees: ["JD", "MC", "+24"]
+      }
+    ],
+    activity: [
+      {
+        icon: "verified_user",
+        title: "Completed Smart Contract Audit",
+        desc: "Audited L2 bridge contracts for Bitstacks network.",
+        time: "2 days ago"
+      },
+      {
+        icon: "article",
+        title: "Published Research Note on ZK Circuits",
+        desc: "Shared math formulas for proof size reduction.",
+        time: "1 week ago"
+      }
+    ],
+    feedback: [
+      {
+        name: "Sarah Chen",
+        rating: 5,
+        text: "Alice provided invaluable advice on our rollup's proof verification setup. Highly knowledgeable!"
+      },
+      {
+        name: "Alex Sterling",
+        rating: 5,
+        text: "Amazing mentor! Patiently walked me through advanced pairing arithmetic."
+      }
+    ],
+    resources: [
+      {
+        id: "res-alice-1",
+        title: "Introduction to pairing-friendly elliptic curves.pdf",
+        type: "PDF",
+        size: "3.4 MB",
+        downloads: 142
+      },
+      {
+        id: "res-alice-2",
+        title: "Common Solidity Attack Vectors & Prevention.md",
+        type: "Markdown",
+        size: "45 KB",
+        downloads: 389
+      }
+    ],
+    missions: [
+      {
+        id: "m-alice-1",
+        title: "ZK-Rollup Circuit Security Review",
+        budget: "4,500 BTS",
+        duration: "10 days",
+        description: "Review of recursive SNARK verification circuit implementation in Rust/Halo2."
+      },
+      {
+        id: "m-alice-2",
+        title: "Audit of Optimistic DAO Voting Contract",
+        budget: "2,000 BTS",
+        duration: "5 days",
+        description: "Security assessment of a custom voting contract with delayed withdrawals."
+      }
+    ]
+  },
+  {
     id: "julian-thorne",
     name: "Julian Thorne",
     role: "Cryptography Expert & Core Dev",

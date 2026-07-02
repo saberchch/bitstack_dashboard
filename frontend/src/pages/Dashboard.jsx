@@ -1,34 +1,26 @@
-import Topbar from '../components/Topbar';
-import StatsGrid from '../components/StatsGrid';
-import ActivityOverview from '../components/ActivityOverview';
-import ContinueLearning from '../components/ContinueLearning';
-import UpcomingEvents from '../components/UpcomingEvents';
-import RecommendedMentorsStrip from '../components/RecommendedMentorsStrip';
-import RecentActivity from '../components/RecentActivity';
-import ResourceLibrary from '../components/ResourceLibrary';
+import { useState, useEffect } from 'react';
+import { getProfile } from '../utils/profileStorage';
+import StudentDashboard from './StudentDashboard';
+import MentorDashboard from './MentorDashboard';
 
+/**
+ * Dashboard — Role Router
+ * -----------------------
+ * Reads the user's profileType and renders the appropriate
+ * purpose-built dashboard. Reactive to profile changes.
+ */
 export default function Dashboard() {
-  return (
-    <>
-      <Topbar searchPlaceholder="Search anything..." />
+  const [profileType, setProfileType] = useState(() => getProfile().profileType);
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-stretch">
-        <UpcomingEvents />
-        <RecommendedMentorsStrip />
-      </div>
+  useEffect(() => {
+    const refresh = (e) => setProfileType(e.detail?.profileType);
+    window.addEventListener('bts_profile_change', refresh);
+    return () => window.removeEventListener('bts_profile_change', refresh);
+  }, []);
 
-      <div className="grid grid-cols-3 gap-8 mb-8">
-        <div className="col-span-2 space-y-8">
-          <ActivityOverview />
-          <ContinueLearning />
-        </div>
-        <div className="col-span-1 space-y-8">
-          <RecentActivity />
-          <ResourceLibrary />
-        </div>
-      </div>
+  if (profileType === 'Mentor') {
+    return <MentorDashboard />;
+  }
 
-      <StatsGrid />
-    </>
-  );
+  return <StudentDashboard />;
 }

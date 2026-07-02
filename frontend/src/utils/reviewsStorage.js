@@ -1,28 +1,45 @@
+/**
+ * reviewsStorage.js
+ * -----------------
+ * Manages reviews via direct REST API calls.
+ *
+ * GET  /api/reviews?targetId=xxx  → list reviews for an entity
+ * POST /api/reviews               → create a review
+ *
+ * Reviews are also cached locally for synchronous aggregate reads.
+ */
+import { apiGet, apiPost } from './api';
 import { getProfile } from './profileStorage';
 
 export const REVIEW_ENTITY_TYPES = {
-  MENTOR: 'mentor',
-  LIBRARY: 'library',
-  SESSION: 'session',
-  MISSION: 'mission',
+  MENTOR:    'mentor',
+  LIBRARY:   'library',
+  SESSION:   'session',
+  MISSION:   'mission',
   INSTITUTE: 'institute',
 };
 
 const STORAGE_KEY = 'bts_reviews';
 
-function readAll() {
+// ── Module-level cache ─────────────────────────────────────────────────────────
+let _cache = (() => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch {
+  } catch (_) {
     return [];
   }
+})();
+
+function _setCache(reviews) {
+  _cache = Array.isArray(reviews) ? reviews : [];
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(_cache));
+  } catch (_) {}
+  window.dispatchEvent(new CustomEvent('bts_reviews_change', { detail: _cache }));
 }
 
-function writeAll(reviews) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
-  window.dispatchEvent(new CustomEvent('bts_reviews_change', { detail: reviews }));
-}
+// ── Public API ────────────────────────────────────────────────────────────────
 
 export function normalizeSeedReview(entry, entityType, entityId) {
   return {
@@ -38,12 +55,30 @@ export function normalizeSeedReview(entry, entityType, entityId) {
   };
 }
 
+/** Synchronous read of ALL cached reviews. */
 export function getStoredReviews() {
-  return readAll();
+  return _cache;
+}
+
+/**
+ * Fetch reviews for a specific entity from the server.
+ * Merges with cached reviews and updates the cache.
+ */
+export async function fetchReviewsForEntity(entityType, entityId) {
+  try {
+    const data = await apiGet(`/api/reviews?targetId=${encodeURIComponent(entityId)}`);
+    if (Array.isArray(data)) {
+      // Merge: replace any existing stored reviews for this entity
+      const others = _cache.filter(r => !(r.entityType === entityType && r.entityId === entityId));
+      _setCache([...others, ...data]);
+    }
+  } catch (err) {
+    console.warn('[reviewsStorage] fetchReviewsForEntity failed:', err.message);
+  }
 }
 
 export function getReviewsForEntity(entityType, entityId, seedReviews = []) {
-  const stored = readAll().filter(
+  const stored = _cache.filter(
     (r) => r.entityType === entityType && r.entityId === entityId
   );
   const seeds = seedReviews.map((r) => normalizeSeedReview(r, entityType, entityId));
@@ -68,7 +103,7 @@ export function getAggregateRating(entityType, entityId, seedReviews = [], fallb
 
 export function hasUserReviewed(entityType, entityId, userId) {
   if (!userId) return false;
-  return readAll().some(
+  return _cache.some(
     (r) =>
       r.entityType === entityType &&
       r.entityId === entityId &&
@@ -76,7 +111,10 @@ export function hasUserReviewed(entityType, entityId, userId) {
   );
 }
 
-export function addReview({ entityType, entityId, rating, text }) {
+/**
+ * Add a review: optimistic local update + POST to server.
+ */
+export async function addReview({ entityType, entityId, rating, text }) {
   const profile = getProfile();
   const review = {
     id: `review-${Date.now()}`,
@@ -88,8 +126,22 @@ export function addReview({ entityType, entityId, rating, text }) {
     text: text.trim(),
     createdAt: new Date().toISOString(),
     isSeed: false,
+    // Fields the backend expects:
+    targetId: entityId,
+    targetType: entityType,
   };
-  const next = [...readAll(), review];
-  writeAll(next);
+
+  // Optimistic update
+  _setCache([..._cache, review]);
+
+  try {
+    const saved = await apiPost('/api/reviews', review);
+    if (saved && saved.id) {
+      _setCache(_cache.map(r => r.id === review.id ? { ...review, ...saved } : r));
+    }
+  } catch (err) {
+    console.warn('[reviewsStorage] addReview failed:', err.message);
+  }
+
   return review;
 }

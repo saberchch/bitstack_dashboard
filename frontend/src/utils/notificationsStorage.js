@@ -1,58 +1,62 @@
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 'n1',
-    category: 'disputes',
-    title: 'Dispute #DIS-2041 Assigned',
-    description: 'Arbitration Panel #7 has been assigned to investigate your case with DeFi Nexus.',
-    ts: 'Yesterday, 10:12',
-    read: false,
-    route: '/messages',
-  },
-  {
-    id: 'n2',
-    category: 'mentorship',
-    title: 'Session Request Received',
-    description: 'Dr. Robert Lang requested a private ZK-Rollup Deep Dive session for 250 BTS.',
-    ts: 'Today, 08:45',
-    read: false,
-    route: '/messages',
-  },
-  {
-    id: 'n3',
-    category: 'dlancer',
-    title: 'Counter-Offer Received',
-    description: 'DeFi Nexus submitted a counter-bid of 1,000 BTS for the Smart Contract Security Audit.',
-    ts: 'Yesterday, 18:30',
-    read: false,
-    route: '/messages',
-  },
-  {
-    id: 'n4',
-    category: 'platform',
-    title: 'BTS Reward Disbursed',
-    description: 'You received 50 BTS for completing the "Introduction to Zero-Knowledge Proofs" quiz.',
-    ts: '2 days ago',
-    read: true,
-    route: '/bts-credit',
-  }
-];
+/**
+ * notificationsStorage.js
+ * -----------------------
+ * Manages notifications via direct REST API calls.
+ *
+ * GET   /api/notifications            → list all
+ * PATCH /api/notifications/:id/read   → mark one as read
+ *
+ * Local cache keeps notifications in memory so synchronous reads are instant.
+ */
+import { apiGet, apiPatch, apiPost } from './api';
 
-export function getNotifications() {
-  const data = localStorage.getItem('bts_notifications');
-  if (!data) {
-    localStorage.setItem('bts_notifications', JSON.stringify(INITIAL_NOTIFICATIONS));
-    return INITIAL_NOTIFICATIONS;
+// ── Module-level cache ─────────────────────────────────────────────────────────
+let _cache = (() => {
+  try {
+    const raw = localStorage.getItem('bts_notifications');
+    return raw ? JSON.parse(raw) : [];
+  } catch (_) {
+    return [];
   }
-  return JSON.parse(data);
-}
+})();
 
-export function saveNotifications(notifications) {
-  localStorage.setItem('bts_notifications', JSON.stringify(notifications));
+function _setCache(notifications) {
+  _cache = Array.isArray(notifications) ? notifications : [];
+  try {
+    localStorage.setItem('bts_notifications', JSON.stringify(_cache));
+  } catch (_) {}
   window.dispatchEvent(new Event('bts_notifications_change'));
 }
 
-export function addNotification({ category, title, description, route }) {
-  const notifications = getNotifications();
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/**
+ * Synchronous read from the in-memory cache.
+ */
+export function getNotifications() {
+  return _cache;
+}
+
+/**
+ * Fetch notifications from the server and refresh the cache.
+ * Call from a useEffect on mount.
+ */
+export async function fetchNotificationsFromServer() {
+  try {
+    const data = await apiGet('/api/notifications');
+    if (Array.isArray(data)) {
+      _setCache(data);
+    }
+  } catch (err) {
+    console.warn('[notificationsStorage] fetch failed:', err.message);
+  }
+  return _cache;
+}
+
+/**
+ * Add a notification (optimistic — creates locally + POSTs to server).
+ */
+export async function addNotification({ category, title, description, route }) {
   const newNotification = {
     id: `n-${Date.now()}`,
     category,
@@ -62,29 +66,61 @@ export function addNotification({ category, title, description, route }) {
     read: false,
     route: route || '/notifications',
   };
-  notifications.unshift(newNotification);
-  saveNotifications(notifications);
+
+  // Optimistic local update
+  _setCache([newNotification, ..._cache]);
+
+  // Persist to server (best-effort)
+  try {
+    const saved = await apiPost('/api/notifications', newNotification);
+    if (saved && saved.id) {
+      // Replace the optimistic entry with the server-assigned one
+      _setCache(_cache.map(n => n.id === newNotification.id ? { ...newNotification, ...saved } : n));
+    }
+  } catch (err) {
+    console.warn('[notificationsStorage] addNotification server call failed:', err.message);
+  }
+
   return newNotification;
 }
 
-export function markAsRead(id) {
-  const notifications = getNotifications();
-  const updated = notifications.map(n => n.id === id ? { ...n, read: true } : n);
-  saveNotifications(updated);
+/**
+ * Mark a single notification as read.
+ */
+export async function markAsRead(id) {
+  _setCache(_cache.map(n => n.id === id ? { ...n, read: true } : n));
+  try {
+    await apiPatch(`/api/notifications/${id}/read`);
+  } catch (err) {
+    console.warn('[notificationsStorage] markAsRead failed:', err.message);
+  }
 }
 
+/**
+ * Mark all notifications as read (local only — no bulk endpoint on server).
+ */
 export function markAllAsRead() {
-  const notifications = getNotifications();
-  const updated = notifications.map(n => ({ ...n, read: true }));
-  saveNotifications(updated);
+  _setCache(_cache.map(n => ({ ...n, read: true })));
 }
 
+/**
+ * Delete a notification (local only — filters out of cache).
+ */
 export function deleteNotification(id) {
-  const notifications = getNotifications();
-  const updated = notifications.filter(n => n.id !== id);
-  saveNotifications(updated);
+  _setCache(_cache.filter(n => n.id !== id));
 }
 
+/**
+ * Clear all notifications from local cache.
+ */
 export function clearAllNotifications() {
-  saveNotifications([]);
+  _setCache([]);
+}
+
+/**
+ * Synchronous cache write used by other storage modules to inject notifications
+ * without waiting for a full server round-trip.
+ */
+export function saveNotifications(notifications) {
+  _setCache(notifications);
 }

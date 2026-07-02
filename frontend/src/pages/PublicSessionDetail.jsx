@@ -5,6 +5,7 @@ import { getPublicEnrollments, enrollInPublicSession } from '../utils/enrollment
 import Topbar from '../components/Topbar';
 import ReviewSection from '../components/ReviewSection';
 import { REVIEW_ENTITY_TYPES } from '../utils/reviewsStorage';
+import { getBalance, deductBalance, checkAffordability } from '../utils/balanceStorage';
 
 export default function PublicSessionDetail() {
   const { id } = useParams();
@@ -12,6 +13,18 @@ export default function PublicSessionDetail() {
 
   const [enrollments, setEnrollments] = useState([]);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollError, setEnrollError] = useState('');
+  const [enrolling, setEnrolling] = useState(false);
+
+  // Live balance — updates whenever profile changes
+  const [userBalance, setUserBalance] = useState(getBalance);
+
+  // Keep balance in sync with profile change events
+  useEffect(() => {
+    const onProfileChange = () => setUserBalance(getBalance());
+    window.addEventListener('bts_profile_change', onProfileChange);
+    return () => window.removeEventListener('bts_profile_change', onProfileChange);
+  }, []);
 
   useEffect(() => {
     const list = getPublicEnrollments();
@@ -19,6 +32,7 @@ export default function PublicSessionDetail() {
     if (session) {
       setIsEnrolled(list.includes(session.id));
     }
+    setEnrollError('');
   }, [id, session]);
 
   if (!session) {
@@ -37,10 +51,35 @@ export default function PublicSessionDetail() {
     );
   }
 
+  const sessionPrice = session?.price || 0;
+  const isFreeSession = sessionPrice === 0;
+
   const handleEnroll = () => {
+    setEnrollError('');
+
+    // Paid sessions: verify and deduct balance first
+    if (!isFreeSession) {
+      const check = checkAffordability(sessionPrice);
+      if (!check.affordable) {
+        setEnrollError(
+          `Insufficient BTS balance. You have ${check.balance.toLocaleString()} BTS but this session costs ${sessionPrice.toLocaleString()} BTS.`
+        );
+        return;
+      }
+      const deduction = deductBalance(sessionPrice, `Enrolled: ${session.title}`);
+      if (!deduction.ok) {
+        setEnrollError(deduction.error);
+        return;
+      }
+      // Reflect immediately so the callout card updates
+      setUserBalance(deduction.newBalance);
+    }
+
+    setEnrolling(true);
     const updatedList = enrollInPublicSession(session.id);
     setEnrollments(updatedList);
     setIsEnrolled(true);
+    setEnrolling(false);
   };
 
   const otherWorkshops = getPublicSessions()
@@ -150,23 +189,60 @@ export default function PublicSessionDetail() {
             <div className="space-y-6 relative z-10">
               <div className="flex justify-between items-center border-b border-white/10 pb-4">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Access Fee</span>
-                <span className="text-xl font-extrabold text-bts-gold">Ecosystem Pass</span>
+                {isFreeSession ? (
+                  <span className="text-xl font-extrabold text-bts-gold">Ecosystem Pass</span>
+                ) : (
+                  <span className="text-xl font-extrabold text-bts-gold">{sessionPrice.toLocaleString()} BTS</span>
+                )}
               </div>
               <div className="flex justify-between items-center border-b border-white/10 pb-4">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Your Balance</span>
-                <span className="text-sm font-bold text-gray-300">2,450.75 BTS</span>
+                <span className={`text-sm font-bold ${
+                  (!isFreeSession && userBalance < sessionPrice) ? 'text-red-400' : 'text-gray-300'
+                }`}>
+                  {userBalance.toLocaleString()} BTS
+                </span>
               </div>
-              <p className="text-[10px] text-gray-400 leading-normal">
-                This public workshop is covered by your Bitstacks Ecosystem credentials. Confirming reservation guarantees access and slides.
-              </p>
+              {isFreeSession ? (
+                <p className="text-[10px] text-gray-400 leading-normal">
+                  This public workshop is covered by your Bitstacks Ecosystem credentials. Confirming reservation guarantees access and slides.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {userBalance >= sessionPrice ? (
+                    <p className="text-[10px] text-gray-400 leading-normal">
+                      {sessionPrice.toLocaleString()} BTS will be deducted from your wallet upon reservation.
+                    </p>
+                  ) : (
+                    <div className="flex items-start gap-1.5 bg-red-900/30 border border-red-500/30 rounded-lg p-2.5">
+                      <span className="material-symbols-outlined !text-sm text-red-400 shrink-0 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance_wallet</span>
+                      <p className="text-[10px] text-red-300 leading-normal">
+                        You need <strong className="text-red-200">{(sessionPrice - userBalance).toLocaleString()} more BTS</strong> to reserve this spot. Top up via BTS Credit.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Enrollment error */}
+              {enrollError && (
+                <div className="flex items-start gap-1.5 bg-red-900/30 border border-red-500/30 rounded-lg p-2.5">
+                  <span className="material-symbols-outlined !text-sm text-red-400 shrink-0 mt-0.5">error</span>
+                  <p className="text-[10px] text-red-300 leading-normal">{enrollError}</p>
+                </div>
+              )}
             </div>
 
             <button 
               onClick={handleEnroll}
-              disabled={isEnrolled}
+              disabled={isEnrolled || enrolling || (!isFreeSession && userBalance < sessionPrice)}
               className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs shadow-md transition-all mt-6 flex items-center justify-center gap-1.5 relative z-10 ${
                 isEnrolled 
                   ? 'bg-white/10 text-gray-400 border border-white/5 cursor-default' 
+                  : (!isFreeSession && userBalance < sessionPrice)
+                  ? 'bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed'
+                  : enrolling
+                  ? 'bg-bts-gold/70 text-white cursor-wait'
                   : 'bg-gradient-to-br from-[#FFB77D] to-[#FE932C] text-white hover:brightness-105 active:scale-[0.98] cursor-pointer'
               }`}
             >
@@ -175,7 +251,12 @@ export default function PublicSessionDetail() {
                   <span className="material-symbols-outlined !text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                   Reservation Confirmed
                 </>
-              ) : "Reserve My Spot"}
+              ) : (!isFreeSession && userBalance < sessionPrice) ? (
+                <>
+                  <span className="material-symbols-outlined !text-sm">account_balance_wallet</span>
+                  Insufficient Balance
+                </>
+              ) : enrolling ? 'Confirming...' : isFreeSession ? 'Reserve My Spot' : `Reserve — ${sessionPrice.toLocaleString()} BTS`}
             </button>
           </div>
         </section>

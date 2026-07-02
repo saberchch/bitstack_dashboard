@@ -36,6 +36,11 @@ export default function PrivateSessions() {
   // Fetch bookings on mount or when tab toggles/bookings change
   useEffect(() => {
     setBookings(getPrivateBookings());
+    const handleBookingsChange = (e) => {
+      if (e.detail) setBookings(e.detail);
+    };
+    window.addEventListener('bts_private_bookings_change', handleBookingsChange);
+    return () => window.removeEventListener('bts_private_bookings_change', handleBookingsChange);
   }, [activeTab, isBookingOpen]);
 
   const handleOpenBooking = (mentor) => {

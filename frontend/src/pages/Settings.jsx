@@ -129,6 +129,9 @@ export default function Settings() {
       setEmail(updated.email);
       setPhone(updated.phone || '');
       setBio(updated.bio);
+      if (updated.profileType !== 'Mentor') {
+        setActiveSubTab(prev => prev === 'mentorship' ? 'account' : prev);
+      }
     };
     window.addEventListener('bts_profile_change', handleProfileChange);
     return () => window.removeEventListener('bts_profile_change', handleProfileChange);
@@ -210,8 +213,8 @@ export default function Settings() {
             { key: 'security', label: 'Security & Logins', icon: '🔒' },
             { key: 'notifications', label: 'Notifications Hub', icon: '🔔' },
             { key: 'wallet', label: 'BTS Wallet & Yield', icon: '💳' },
-            { key: 'mentorship', label: 'Mentorship Settings', icon: '🎓' }
-          ].map(tab => (
+            { key: 'mentorship', label: 'Mentorship Settings', icon: '🎓', condition: profile.profileType === 'Mentor' }
+          ].filter(tab => tab.condition === undefined || tab.condition).map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveSubTab(tab.key)}

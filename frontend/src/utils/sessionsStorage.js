@@ -1,3 +1,16 @@
+/**
+ * sessionsStorage.js
+ * ------------------
+ * Manages sessions (public, premium-public, premium-private) via direct REST API.
+ *
+ * GET  /api/sessions          → list all sessions
+ * GET  /api/sessions/:id      → get single session
+ * POST /api/sessions          → create session (Mentor only)
+ *
+ * Local cache keeps sessions in memory for synchronous reads.
+ * Seed sessions from data files are always shown; server sessions are merged on top.
+ */
+import { apiGet, apiPost } from './api';
 import { sessions as seedSessions } from '../data/sessions';
 import { institutes } from '../data/institutes';
 
@@ -6,8 +19,6 @@ export const SESSION_TYPES = {
   PREMIUM_PUBLIC: 'premium_public',
   PREMIUM_PRIVATE: 'premium_private',
 };
-
-const PREMIUM_PUBLIC_KEY = 'bts_premium_public_sessions';
 
 const SESSION_INSTITUTE_MAP = {
   'cross-chain-deep-dive': 'bitstacks',
@@ -93,13 +104,13 @@ const PFE_PREMIUM_PRIVATE_SEED = [
   },
 ];
 
+// ── Normalization ──────────────────────────────────────────────────────────────
 function normalizeSession(session) {
   const instituteId =
     session.instituteId ||
     SESSION_INSTITUTE_MAP[session.id] ||
     'bitstacks';
   const institute = institutes.find((i) => i.id === instituteId);
-
   return {
     ...session,
     sessionType: session.sessionType || SESSION_TYPES.STANDARD,
@@ -114,31 +125,53 @@ function normalizeSession(session) {
   };
 }
 
-function readPremiumPublicSessions() {
+// ── In-memory cache ────────────────────────────────────────────────────────────
+// Server sessions (premium_public created by mentors) cached here.
+let _serverSessions = (() => {
   try {
-    const raw = localStorage.getItem(PREMIUM_PUBLIC_KEY);
+    const raw = localStorage.getItem('bts_premium_public_sessions');
     return raw ? JSON.parse(raw) : [];
-  } catch {
+  } catch (_) {
     return [];
   }
-}
+})();
 
-function writePremiumPublicSessions(sessions) {
-  localStorage.setItem(PREMIUM_PUBLIC_KEY, JSON.stringify(sessions));
+function _setServerSessions(sessions) {
+  _serverSessions = Array.isArray(sessions) ? sessions : [];
+  try {
+    localStorage.setItem('bts_premium_public_sessions', JSON.stringify(_serverSessions));
+  } catch (_) {}
   window.dispatchEvent(new CustomEvent('bts_sessions_change'));
 }
 
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/**
+ * Fetch all sessions from the server and refresh the premium-public cache.
+ * Call from a useEffect on mount.
+ */
+export async function fetchSessionsFromServer() {
+  try {
+    const data = await apiGet('/api/sessions');
+    if (Array.isArray(data)) {
+      const premiumPublic = data.filter(s => s.sessionType === SESSION_TYPES.PREMIUM_PUBLIC);
+      _setServerSessions(premiumPublic);
+    }
+  } catch (err) {
+    console.warn('[sessionsStorage] fetchSessionsFromServer failed:', err.message);
+  }
+}
+
+/** Return ALL sessions: seed (standard) + server (premium_public) + PFE private seeds. */
 export function getAllSessions() {
   const normalizedSeed = seedSessions.map((s) =>
     normalizeSession({
       ...s,
-      sessionType:
-        s.id === 'intro-zkp' ? SESSION_TYPES.PREMIUM_PUBLIC : SESSION_TYPES.STANDARD,
+      sessionType: s.id === 'intro-zkp' ? SESSION_TYPES.PREMIUM_PUBLIC : SESSION_TYPES.STANDARD,
     })
   );
-  const premiumPublic = readPremiumPublicSessions().map(normalizeSession);
+  const premiumPublic = _serverSessions.map(normalizeSession);
   const premiumPrivate = PFE_PREMIUM_PRIVATE_SEED.map(normalizeSession);
-
   return [...normalizedSeed, ...premiumPublic, ...premiumPrivate];
 }
 
@@ -166,7 +199,11 @@ export function getInstituteName(instituteId) {
   return institutes.find((i) => i.id === instituteId)?.title || instituteId;
 }
 
-export function createPremiumPublicSession(sessionData) {
+/**
+ * Create a new premium-public session (Mentor only).
+ * POSTs to /api/sessions and updates the local cache.
+ */
+export async function createPremiumPublicSession(sessionData) {
   const session = normalizeSession({
     ...sessionData,
     id: `premium-${Date.now()}`,
@@ -174,7 +211,6 @@ export function createPremiumPublicSession(sessionData) {
     attendees: 0,
     maxCapacity: sessionData.maxCapacity || 100,
     createdAt: new Date().toISOString(),
-    createdBy: 'admin',
     timeInfo: sessionData.timeInfo || `Starts ${sessionData.date}`,
     overview: sessionData.overview || sessionData.shortDescription || '',
     curriculum: sessionData.curriculum || [
@@ -194,7 +230,8 @@ export function createPremiumPublicSession(sessionData) {
     },
   });
 
-  const next = [session, ...readPremiumPublicSessions()];
-  writePremiumPublicSessions(next);
-  return session;
+  const saved = await apiPost('/api/sessions', session);
+  const next = [saved, ..._serverSessions];
+  _setServerSessions(next);
+  return saved;
 }

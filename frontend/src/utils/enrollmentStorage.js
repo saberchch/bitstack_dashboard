@@ -1,77 +1,98 @@
+/**
+ * enrollmentStorage.js
+ * --------------------
+ * Manages public session enrollments and private bookings via direct REST API.
+ *
+ * GET  /api/enrollments            → list user's enrollments
+ * POST /api/enrollments            → enroll in a session
+ * GET  /api/bookings               → list user's private bookings
+ * POST /api/bookings               → create a booking
+ */
+import { apiGet, apiPost } from './api';
 import { getSessionById } from './sessionsStorage';
 
-const LEGACY_KEY = 'bts_public_enrollments';
-const RECORDS_KEY = 'bts_public_enrollment_records';
-
-function migrateLegacyEnrollments() {
-  const legacy = localStorage.getItem(LEGACY_KEY);
-  if (!legacy) return;
-
+// ── Enrollment cache ───────────────────────────────────────────────────────────
+let _enrollmentCache = (() => {
   try {
-    const parsed = JSON.parse(legacy);
-    if (!Array.isArray(parsed) || parsed.length === 0) return;
-
-    const existing = readRecords();
-    const existingIds = new Set(existing.map((r) => r.sessionId));
-
-    const migrated = parsed
-      .filter((id) => typeof id === 'string' && !existingIds.has(id))
-      .map((sessionId) => ({
-        sessionId,
-        enrolledAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        sessionType: getSessionById(sessionId)?.sessionType || 'standard',
-        status: 'confirmed',
-      }));
-
-    if (migrated.length > 0) {
-      writeRecords([...existing, ...migrated]);
-    }
-  } catch {
-    // ignore corrupt legacy data
-  }
-}
-
-function readRecords() {
-  migrateLegacyEnrollments();
-  try {
-    const raw = localStorage.getItem(RECORDS_KEY);
-    if (!raw) {
-      const defaultRecords = [
-        {
-          sessionId: 'smart-contract-auditing',
-          enrolledAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          sessionType: 'standard',
-          status: 'confirmed',
-        },
-      ];
-      localStorage.setItem(RECORDS_KEY, JSON.stringify(defaultRecords));
-      return defaultRecords;
-    }
-    return JSON.parse(raw);
-  } catch {
+    const raw = localStorage.getItem('bts_public_enrollment_records');
+    return raw ? JSON.parse(raw) : [];
+  } catch (_) {
     return [];
   }
+})();
+
+function _setEnrollmentCache(records) {
+  _enrollmentCache = Array.isArray(records) ? records : [];
+  try {
+    localStorage.setItem('bts_public_enrollment_records', JSON.stringify(_enrollmentCache));
+  } catch (_) {}
+  window.dispatchEvent(new CustomEvent('bts_enrollments_change', { detail: _enrollmentCache }));
 }
 
-function writeRecords(records) {
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
-  window.dispatchEvent(new CustomEvent('bts_enrollments_change', { detail: records }));
+// ── Booking cache ──────────────────────────────────────────────────────────────
+const DEFAULT_BOOKINGS = [
+  {
+    id: 'booking-1',
+    mentorId: 'elena-volkov',
+    mentorName: 'Dr. Elena Volkov',
+    mentorAvatar:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuAW6ZyX8xOjktMDABgbeSoECsYzlAjy7-FJgYKOj6AHXoRIfXnbGHnzSerNy0vBBqilDXnGUkAe9ZcZKJjtl79xszrt_WXjPjPlllqVk4WqEeWnx23dN6RFgL2W_HzkWA11XHgfpI2xg4EyWHj_b7U4g0aulNmsMrg-INtyHa58pBUsF5gPHymRL2zisAV9Y7R3WZqbyQZz8jpLu4asi7f13Epp7ZdmIz62st1kcP94Jm31u_p8Ad5jNgn1hOI0XiH2TWF_nORMLvc',
+    date: 3,
+    slot: '11:30 AM EST',
+    topic: 'Zero Knowledge Proof Architecture Review',
+    duration: 2,
+    cost: 1500,
+    status: 'Confirmed',
+  },
+];
+
+let _bookingCache = (() => {
+  try {
+    const raw = localStorage.getItem('bts_private_bookings');
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_BOOKINGS;
+  } catch (_) {
+    return DEFAULT_BOOKINGS;
+  }
+})();
+
+function _setBookingCache(bookings) {
+  _bookingCache = Array.isArray(bookings) ? bookings : [];
+  try {
+    localStorage.setItem('bts_private_bookings', JSON.stringify(_bookingCache));
+  } catch (_) {}
+  window.dispatchEvent(new CustomEvent('bts_private_bookings_change', { detail: _bookingCache }));
+}
+
+// ── Public API — Enrollments ───────────────────────────────────────────────────
+
+/** Fetch enrollments from server and refresh cache. */
+export async function fetchEnrollmentsFromServer() {
+  try {
+    const data = await apiGet('/api/enrollments');
+    if (Array.isArray(data)) {
+      _setEnrollmentCache(data);
+    }
+  } catch (err) {
+    console.warn('[enrollmentStorage] fetchEnrollments failed:', err.message);
+  }
+  return _enrollmentCache;
 }
 
 export function getEnrollmentRecords() {
-  return readRecords();
+  return _enrollmentCache;
 }
 
 export function getPublicEnrollments() {
-  return readRecords().map((r) => r.sessionId);
+  return _enrollmentCache.map((r) => r.sessionId);
 }
 
 export function getEnrollmentRecord(sessionId) {
-  return readRecords().find((r) => r.sessionId === sessionId) || null;
+  return _enrollmentCache.find((r) => r.sessionId === sessionId) || null;
 }
 
 export function getMyEnrollmentsWithDetails() {
-  return readRecords()
+  return _enrollmentCache
     .map((record) => {
       const session = getSessionById(record.sessionId);
       if (!session) return null;
@@ -81,80 +102,94 @@ export function getMyEnrollmentsWithDetails() {
     .sort((a, b) => new Date(b.enrolledAt) - new Date(a.enrolledAt));
 }
 
-export function enrollInPublicSession(sessionId) {
-  const records = readRecords();
-  if (records.some((r) => r.sessionId === sessionId)) {
-    return records.map((r) => r.sessionId);
+export function isEnrolledInPublic(sessionId) {
+  return _enrollmentCache.some((r) => r.sessionId === sessionId);
+}
+
+export async function enrollInPublicSession(sessionId) {
+  if (isEnrolledInPublic(sessionId)) {
+    return getPublicEnrollments();
   }
 
   const session = getSessionById(sessionId);
-  const next = [
-    ...records,
-    {
-      sessionId,
-      enrolledAt: new Date().toISOString(),
-      sessionType: session?.sessionType || 'standard',
-      status: 'confirmed',
-      bookedSlot: session?.sessionType === 'premium_private' ? null : undefined,
-    },
-  ];
-  writeRecords(next);
-  return next.map((r) => r.sessionId);
-}
+  const newRecord = {
+    sessionId,
+    enrolledAt: new Date().toISOString(),
+    sessionType: session?.sessionType || 'standard',
+    status: 'confirmed',
+  };
 
-export function isEnrolledInPublic(sessionId) {
-  return readRecords().some((r) => r.sessionId === sessionId);
+  // Optimistic update
+  _setEnrollmentCache([..._enrollmentCache, newRecord]);
+
+  // Persist to server
+  try {
+    await apiPost('/api/enrollments', { sessionId, sessionType: newRecord.sessionType });
+  } catch (err) {
+    console.warn('[enrollmentStorage] enrollInPublicSession failed:', err.message);
+  }
+
+  return getPublicEnrollments();
 }
 
 export function cancelEnrollment(sessionId) {
-  const next = readRecords().filter((r) => r.sessionId !== sessionId);
-  writeRecords(next);
-  return next;
+  _setEnrollmentCache(_enrollmentCache.filter((r) => r.sessionId !== sessionId));
+  return _enrollmentCache;
+}
+
+// ── Public API — Bookings ──────────────────────────────────────────────────────
+
+/** Fetch private bookings from server and refresh cache. */
+export async function fetchBookingsFromServer() {
+  try {
+    const data = await apiGet('/api/bookings');
+    if (Array.isArray(data) && data.length > 0) {
+      _setBookingCache(data);
+    }
+  } catch (err) {
+    console.warn('[enrollmentStorage] fetchBookings failed:', err.message);
+  }
+  return _bookingCache;
 }
 
 export function getPrivateBookings() {
-  const data = localStorage.getItem('bts_private_bookings');
-  if (!data) {
-    const defaultBookings = [
-      {
-        id: 'booking-1',
-        mentorId: 'elena-volkov',
-        mentorName: 'Dr. Elena Volkov',
-        mentorAvatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuAW6ZyX8xOjktMDABgbeSoECsYzlAjy7-FJgYKOj6AHXoRIfXnbGHnzSerNy0vBBqilDXnGUkAe9ZcZKJjtl79xszrt_WXjPjPlllqVk4WqEeWnx23dN6RFgL2W_HzkWA11XHgfpI2xg4EyWHj_b7U4g0aulNmsMrg-INtyHa58pBUsF5gPHymRL2zisAV9Y7R3WZqbyQZz8jpLu4asi7f13Epp7ZdmIz62st1kcP94Jm31u_p8Ad5jNgn1hOI0XiH2TWF_nORMLvc',
-        date: 3,
-        slot: '11:30 AM EST',
-        topic: 'Zero Knowledge Proof Architecture Review',
-        duration: 2,
-        cost: 1500,
-        status: 'Confirmed',
-      },
-    ];
-    localStorage.setItem('bts_private_bookings', JSON.stringify(defaultBookings));
-    return defaultBookings;
-  }
-  return JSON.parse(data);
+  return _bookingCache;
 }
 
-export function bookPrivateSession(booking) {
-  const bookings = getPrivateBookings();
+export async function bookPrivateSession(booking) {
   const newBooking = {
     id: 'booking-' + Date.now(),
-    status: 'Confirmed',
+    status: 'Pending',
     ...booking,
   };
-  bookings.push(newBooking);
-  localStorage.setItem('bts_private_bookings', JSON.stringify(bookings));
-  return bookings;
+
+  // Optimistic update
+  _setBookingCache([..._bookingCache, newBooking]);
+
+  try {
+    const saved = await apiPost('/api/bookings', newBooking);
+    if (saved && saved.id) {
+      // Sync server-assigned id
+      _setBookingCache(
+        _bookingCache.map((b) =>
+          b.id === newBooking.id ? { ...newBooking, id: saved.id } : b
+        )
+      );
+      newBooking.id = saved.id;
+    }
+  } catch (err) {
+    console.warn('[enrollmentStorage] bookPrivateSession failed:', err.message);
+  }
+
+  return _bookingCache;
 }
 
 export function cancelPrivateBooking(bookingId) {
-  const bookings = getPrivateBookings();
-  const updatedBookings = bookings.filter((b) => b.id !== bookingId);
-  localStorage.setItem('bts_private_bookings', JSON.stringify(updatedBookings));
-  return updatedBookings;
+  _setBookingCache(_bookingCache.filter((b) => b.id !== bookingId));
+  return _bookingCache;
 }
 
+// ── Formatting helper ──────────────────────────────────────────────────────────
 export function formatEnrollmentDate(iso) {
   if (!iso) return '—';
   try {

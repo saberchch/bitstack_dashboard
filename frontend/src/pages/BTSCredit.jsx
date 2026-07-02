@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Topbar from '../components/Topbar';
+import { getProfile, updateProfile } from '../utils/profileStorage';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const BTS_TO_TND = 1; // 1 BTS = 1 TND
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
-const TRANSACTIONS = [
+const INITIAL_TXS = [
   {
     id: 'tx1',
     category: 'earned',
@@ -85,6 +86,22 @@ const TRANSACTIONS = [
   },
 ];
 
+function getTransactions() {
+  const data = localStorage.getItem('bts_transactions');
+  if (!data) return [];
+  try {
+    return JSON.parse(data);
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveTransactions(txs) {
+  localStorage.setItem('bts_transactions', JSON.stringify(txs));
+  window.dispatchEvent(new CustomEvent('bts_transactions_change', { detail: txs }));
+}
+
+
 const EARN_WAYS = [
   {
     title: 'Complete D-Lancer Missions',
@@ -129,6 +146,10 @@ export default function BTSCredit() {
   const [activeSection, setActiveSection] = useState('overview');
   const [txFilter, setTxFilter] = useState('all');
 
+  // Profile and Transactions State
+  const [profile, setProfile] = useState(() => getProfile());
+  const [txs, setTxs] = useState(() => getTransactions());
+
   // Redemption form state
   const [redeemAmount, setRedeemAmount] = useState('');
   const [redeemIBAN, setRedeemIBAN] = useState('');
@@ -142,20 +163,86 @@ export default function BTSCredit() {
   const [topupStep, setTopupStep] = useState(1); // 1 = amount, 2 = method, 3 = form, 4 = success
   const topupTND = topupAmount ? (parseFloat(topupAmount) * BTS_TO_TND).toFixed(2) : '—';
 
-  const balance = 2610;
+  const balance = profile.balance || 0;
   const tndValue = (balance * BTS_TO_TND).toFixed(2);
   const redeemTND = redeemAmount ? (parseFloat(redeemAmount) * BTS_TO_TND).toFixed(2) : '—';
   const minRedeem = 100;
 
+  useEffect(() => {
+    const handleProfileChange = (e) => {
+      setProfile(e.detail);
+    };
+    const handleTxChange = (e) => {
+      if (e.detail) setTxs(e.detail);
+      else setTxs(getTransactions());
+    };
+    window.addEventListener('bts_profile_change', handleProfileChange);
+    window.addEventListener('bts_transactions_change', handleTxChange);
+    return () => {
+      window.removeEventListener('bts_profile_change', handleProfileChange);
+      window.removeEventListener('bts_transactions_change', handleTxChange);
+    };
+  }, []);
+
   const filteredTxs =
     txFilter === 'all'
-      ? TRANSACTIONS
-      : TRANSACTIONS.filter(t => t.category === txFilter);
+      ? txs
+      : txs.filter(t => t.category === txFilter);
 
   const handleRedeem = (e) => {
     e.preventDefault();
-    if (parseFloat(redeemAmount) >= minRedeem) setRedeemSubmitted(true);
+    const amt = parseFloat(redeemAmount) || 0;
+    if (amt >= minRedeem && amt <= balance) {
+      // 1. Deduct from profile balance
+      const nextBalance = balance - amt;
+      updateProfile({ balance: nextBalance });
+
+      // 2. Add transaction
+      const newTx = {
+        id: `tx-${Date.now()}`,
+        category: 'redeemed',
+        type: 'TND Redemption',
+        icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z',
+        iconBg: 'bg-purple-50 text-purple-700',
+        description: `Converted ${amt} BTS → ${(amt * BTS_TO_TND).toFixed(2)} TND`,
+        amount: `-${amt}`,
+        positive: false,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      };
+      const nextTxs = [newTx, ...txs];
+      saveTransactions(nextTxs);
+      setTxs(nextTxs);
+
+      setRedeemSubmitted(true);
+    }
   };
+
+  const completeTopup = (method) => {
+    const amt = parseFloat(topupAmount) || 0;
+    if (amt > 0) {
+      // 1. Add to profile balance
+      const nextBalance = balance + amt;
+      updateProfile({ balance: nextBalance });
+
+      // 2. Add transaction
+      const newTx = {
+        id: `tx-${Date.now()}`,
+        category: 'earned',
+        type: method === 'bank' ? 'Bank Wire Top-Up' : 'Flouci Top-Up',
+        icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z',
+        iconBg: method === 'bank' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700',
+        description: `Purchased BTS via ${method === 'bank' ? 'Bank Wire' : 'Flouci'}`,
+        amount: `+${amt}`,
+        positive: true,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      };
+      const nextTxs = [newTx, ...txs];
+      saveTransactions(nextTxs);
+      setTxs(nextTxs);
+      setTopupStep(4);
+    }
+  };
+
 
   return (
     <>
@@ -347,7 +434,7 @@ export default function BTSCredit() {
               </button>
             </div>
             <div className="divide-y divide-gray-50">
-              {TRANSACTIONS.slice(0, 4).map(tx => (
+              {txs.slice(0, 4).map(tx => (
                 <TxRow key={tx.id} tx={tx} />
               ))}
             </div>
@@ -636,7 +723,7 @@ export default function BTSCredit() {
                   </div>
 
                   <button
-                    onClick={() => setTopupStep(4)}
+                    onClick={() => completeTopup('bank')}
                     className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl text-sm transition-all shadow-md"
                   >
                     I Have Completed the Wire Transfer
@@ -715,7 +802,7 @@ export default function BTSCredit() {
 
                   <button
                     disabled={!topupFlouciPhone || topupFlouciPhone.length < 8}
-                    onClick={() => setTopupStep(4)}
+                    onClick={() => completeTopup('flouci')}
                     className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-xl text-sm transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Send Flouci Payment Request
@@ -994,7 +1081,7 @@ export default function BTSCredit() {
               </tbody>
             </table>
             <div className="p-4 border-t border-gray-50 text-center">
-              <p className="text-[11px] text-gray-400">Showing {filteredTxs.length} of {TRANSACTIONS.length} transactions</p>
+              <p className="text-[11px] text-gray-400">Showing {filteredTxs.length} of {txs.length} transactions</p>
             </div>
           </div>
         </div>

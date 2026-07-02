@@ -1,5 +1,19 @@
-export const CALENDAR_STORAGE_KEY = 'bts_calendar_sessions';
-export const CALENDAR_SYNC_EVENT = 'bts_calendar_sync';
+/**
+ * calendarStorage.js
+ * ------------------
+ * Manages calendar events via direct REST API calls.
+ *
+ * GET    /api/calendar          → list user's events
+ * POST   /api/calendar          → create an event
+ * PATCH  /api/calendar/:id      → update an event
+ * DELETE /api/calendar/:id      → delete an event
+ *
+ * Seed events are shown on first load; server events are merged on top.
+ */
+import { apiGet, apiPost, apiPatch, apiDelete } from './api';
+
+export const CALENDAR_STORAGE_KEY = 'bts_calendar_events';
+export const CALENDAR_SYNC_EVENT  = 'bts_calendar_sync';
 
 export const SESSION_TYPES = {
   workshop:   { label: 'Public Workshop',  dot: 'bg-blue-500',    pill: 'bg-blue-50 text-blue-700 border-l-2 border-blue-500',      badge: 'bg-blue-100 text-blue-700',    accent: '#3b82f6' },
@@ -42,7 +56,7 @@ export const INITIAL_SESSIONS = [
     date: '2026-06-08', time: '17:30', duration: 'Hard Deadline',
     host: 'D-Lancer System', hostRole: 'Mission Level 4',
     location: 'Portal Submission', seats: '—',
-    desc: 'Final submission window for the Deep Web Protocol mission. All deliverables must be uploaded and peer-reviewed before this timestamp.',
+    desc: 'Final submission window for the Deep Web Protocol mission.',
     tags: ['Deadline', 'Mission', 'Level 4'],
     avatar: 'https://ui-avatars.com/api/?name=DL&background=ef4444&color=ffffff&size=40',
   },
@@ -60,7 +74,7 @@ export const INITIAL_SESSIONS = [
     date: '2026-06-15', time: '16:00', duration: '1.5h',
     host: 'Dr. Robert Lang', hostRole: 'Oxford Crypto Lab',
     location: 'Private Video Call', seats: '2/3',
-    desc: 'Intensive private review of your ZK-Rollup implementation with circuit optimization suggestions and prover performance benchmarking.',
+    desc: 'Intensive private review of your ZK-Rollup implementation with circuit optimization suggestions.',
     tags: ['ZK-Rollups', 'Private', 'Code Review'],
     avatar: 'https://ui-avatars.com/api/?name=Robert+Lang&background=1d4ed8&color=ffffff&size=40',
   },
@@ -69,7 +83,7 @@ export const INITIAL_SESSIONS = [
     date: '2026-06-18', time: '23:59', duration: 'Hard Deadline',
     host: 'Project: NFT Platform', hostRole: 'Sprint 3 Milestone',
     location: 'GitHub Repository', seats: '—',
-    desc: 'All feature branches must be merged and the codebase frozen for QA testing. No commits after this timestamp will be accepted.',
+    desc: 'All feature branches must be merged and the codebase frozen for QA testing.',
     tags: ['Deadline', 'Code Freeze', 'NFT'],
     avatar: 'https://ui-avatars.com/api/?name=CF&background=ef4444&color=ffffff&size=40',
   },
@@ -78,7 +92,7 @@ export const INITIAL_SESSIONS = [
     date: '2026-06-12', time: '15:00', duration: '4h',
     host: 'Alice Merton', hostRole: 'Lead Architect · Nexus Protocol',
     location: 'Online · Zoom', seats: '58/80',
-    desc: 'Deep dive into AMM architecture, lending pool design, and cross-chain bridge security patterns in production DeFi systems.',
+    desc: 'Deep dive into AMM architecture, lending pool design, and cross-chain bridge security patterns.',
     tags: ['DeFi', 'Architecture', 'AMM'],
     avatar: 'https://ui-avatars.com/api/?name=Alice+Merton&background=db2777&color=ffffff&size=40',
   },
@@ -87,7 +101,7 @@ export const INITIAL_SESSIONS = [
     date: '2026-06-20', time: '11:00', duration: '3h',
     host: 'Marcus Kane', hostRole: 'Lead Designer · Bitstacks',
     location: 'Online · Figma Live', seats: '35/50',
-    desc: 'Hands-on design session covering wallet UX patterns, transaction state design, and dark-mode component systems for dApps.',
+    desc: 'Hands-on design session covering wallet UX patterns, transaction state design, and dark-mode component systems.',
     tags: ['UI/UX', 'Figma', 'Design'],
     avatar: 'https://ui-avatars.com/api/?name=Marcus+Kane&background=7c3aed&color=ffffff&size=40',
   },
@@ -96,7 +110,7 @@ export const INITIAL_SESSIONS = [
     date: '2026-06-22', time: '17:00', duration: '2h',
     host: 'DAO Council', hostRole: 'Governance · Token Holders',
     location: 'Snapshot + Video', seats: '12/20',
-    desc: 'Quarterly governance session to vote on BTS emission schedule, staking parameter adjustments, and treasury allocation proposals.',
+    desc: 'Quarterly governance session to vote on BTS emission schedule and staking parameters.',
     tags: ['DAO', 'Governance', 'Tokenomics'],
     avatar: 'https://ui-avatars.com/api/?name=DAO&background=0b1121&color=d4a017&size=40',
   },
@@ -105,7 +119,7 @@ export const INITIAL_SESSIONS = [
     date: '2026-06-25', time: '10:00', duration: '2h',
     host: 'Bitstacks Institute', hostRole: 'AI Ethics Program',
     location: 'Proctored Online', seats: '22/30',
-    desc: 'Final written assessment for the AI Ethics program, covering case studies in decentralized AI governance and algorithmic fairness.',
+    desc: 'Final written assessment for the AI Ethics program.',
     tags: ['AI Ethics', 'Exam', 'Certification'],
     avatar: 'https://ui-avatars.com/api/?name=BI&background=0b1121&color=d4a017&size=40',
   },
@@ -114,7 +128,7 @@ export const INITIAL_SESSIONS = [
     date: '2026-06-28', time: '09:00', duration: '48h',
     host: 'Bitstacks Core Team', hostRole: '72h Hackathon · Open Registration',
     location: 'Online + Discord', seats: '89/150',
-    desc: '48-hour Solidity hackathon with prizes of 5,000 BTS for 1st place. Build a DeFi protocol, NFT marketplace, or DAO tooling project.',
+    desc: '48-hour Solidity hackathon with prizes of 5,000 BTS for 1st place.',
     tags: ['Hackathon', 'Solidity', 'BTS Prize'],
     avatar: 'https://ui-avatars.com/api/?name=BTS&background=d4a017&color=0b1121&size=40',
   },
@@ -139,8 +153,29 @@ export const INITIAL_INVITES = [
 ];
 
 export const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-export const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+export const DAY_NAMES   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+// ── Module-level cache ─────────────────────────────────────────────────────────
+// Start with seed data; server events are merged after first fetch.
+let _cache = (() => {
+  try {
+    const raw = localStorage.getItem(CALENDAR_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...INITIAL_SESSIONS];
+  } catch (_) {
+    return [...INITIAL_SESSIONS];
+  }
+})();
+
+function _setCache(sessions, { notify = true } = {}) {
+  _cache = Array.isArray(sessions) ? sessions : [];
+  try {
+    localStorage.setItem(CALENDAR_STORAGE_KEY, JSON.stringify(_cache));
+  } catch (_) {}
+  if (notify) window.dispatchEvent(new Event(CALENDAR_SYNC_EVENT));
+}
+
+// ── Date helpers ───────────────────────────────────────────────────────────────
 function startOfToday() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -148,7 +183,7 @@ function startOfToday() {
 
 export function sessionToDate(session) {
   const [y, m, d] = session.date.split('-').map(Number);
-  const [h, min] = (session.time || '00:00').split(':').map(Number);
+  const [h, min]  = (session.time || '00:00').split(':').map(Number);
   return new Date(y, m - 1, d, h, min);
 }
 
@@ -162,16 +197,16 @@ export function formatSessionDate(session) {
   const date = sessionToDate(session);
   return {
     month: MONTH_NAMES[date.getMonth()].slice(0, 3),
-    day: date.getDate(),
+    day:   date.getDate(),
     weekday: DAY_NAMES[date.getDay()],
   };
 }
 
 export function formatSessionTime(time) {
   if (!time) return '';
-  const [h, m] = time.split(':').map(Number);
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  const hour12 = h % 12 || 12;
+  const [h, m]   = time.split(':').map(Number);
+  const suffix   = h >= 12 ? 'PM' : 'AM';
+  const hour12   = h % 12 || 12;
   return `${hour12}:${String(m).padStart(2, '0')} ${suffix}`;
 }
 
@@ -187,38 +222,60 @@ export function isUrgentSession(session, withinDays = 3) {
   const diff = daysUntil(session);
   if (diff < 0) return false;
   if (session.type === 'deadline' && diff <= withinDays) return true;
-  if (session.type === 'exam' && diff <= 2) return true;
+  if (session.type === 'exam'     && diff <= 2)          return true;
   return diff === 0;
 }
 
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/** Synchronous read. */
 export function getCalendarSessions() {
+  return _cache;
+}
+
+/** Fetch events from server, merge with seed data, refresh cache. */
+export async function fetchCalendarFromServer() {
   try {
-    const saved = localStorage.getItem(CALENDAR_STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
-  } catch {}
-  return INITIAL_SESSIONS;
-}
-
-export function initCalendarStorage() {
-  if (!localStorage.getItem(CALENDAR_STORAGE_KEY)) {
-    localStorage.setItem(CALENDAR_STORAGE_KEY, JSON.stringify(INITIAL_SESSIONS));
+    const data = await apiGet('/api/calendar');
+    if (Array.isArray(data) && data.length > 0) {
+      // Merge: server events override seed events with the same id
+      const serverIds = new Set(data.map(e => e.id));
+      const merged    = [
+        ...INITIAL_SESSIONS.filter(s => !serverIds.has(s.id)),
+        ...data,
+      ];
+      _setCache(merged);
+    }
+  } catch (err) {
+    console.warn('[calendarStorage] fetchCalendarFromServer failed:', err.message);
   }
+  return _cache;
 }
 
-export function saveCalendarSessions(sessions, { notify = true } = {}) {
-  localStorage.setItem(CALENDAR_STORAGE_KEY, JSON.stringify(sessions));
-  if (notify) {
-    window.dispatchEvent(new Event(CALENDAR_SYNC_EVENT));
+/** No-op kept for backward compatibility. */
+export function initCalendarStorage() {}
+
+/** Add a new event and persist to server. */
+export async function addCalendarSession(session) {
+  _setCache([..._cache, session]);
+  try {
+    const saved = await apiPost('/api/calendar', session);
+    if (saved && saved.id && saved.id !== session.id) {
+      // Sync server-assigned id
+      _setCache(_cache.map(s => s.id === session.id ? { ...session, id: saved.id } : s));
+    }
+  } catch (err) {
+    console.warn('[calendarStorage] addCalendarSession failed:', err.message);
   }
-}
-
-export function addCalendarSession(session) {
-  const list = getCalendarSessions();
-  list.push(session);
-  saveCalendarSessions(list);
   return session;
 }
 
+/** Save (replace) the full sessions list locally; use addCalendarSession for server persistence. */
+export function saveCalendarSessions(sessions, { notify = true } = {}) {
+  _setCache(sessions, { notify });
+}
+
+// ── Filter / sort helpers ─────────────────────────────────────────────────────
 function sortUpcoming(a, b) {
   const aUrgent = isUrgentSession(a);
   const bUrgent = isUrgentSession(b);
@@ -245,7 +302,7 @@ export function getUrgentDeadlines(sessions = getCalendarSessions(), withinDays 
 
 export function getTodaySessions(sessions = getCalendarSessions()) {
   const today = startOfToday();
-  const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const key   = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   return sessions
     .filter(s => s.date === key)
     .sort((a, b) => sessionToDate(a) - sessionToDate(b));

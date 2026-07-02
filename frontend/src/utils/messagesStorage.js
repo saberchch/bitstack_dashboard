@@ -1,5 +1,20 @@
+/**
+ * messagesStorage.js
+ * ------------------
+ * Manages conversations & messages via direct REST API calls.
+ *
+ * GET  /api/conversations                          → list all conversations
+ * POST /api/conversations                          → create conversation
+ * GET  /api/conversations/:id/messages             → list messages
+ * POST /api/conversations/:id/messages             → send message
+ * PATCH /api/conversations/:id/messages/:mid/read  → mark message read
+ *
+ * Local cache keeps conversations in memory so synchronous reads stay instant.
+ */
+import { apiGet, apiPost, apiPatch } from './api';
 import { addNotification } from './notificationsStorage';
 
+// ── Seed data (shown when server returns empty / user has no conversations yet) ─
 const INITIAL_CONVOS = [
   // ════ DIRECT ════
   {
@@ -73,7 +88,7 @@ const INITIAL_CONVOS = [
       ]
     },
     messages: [
-      { id: '1', from: 'me', text: 'Hi Sarah, I\'ve submitted my application to your 12-Week Web3 Roadmap mentorship program. I\'m interested in ZK Layer-2 designs.', ts: 'Jun 3', date: 'Jun 3' },
+      { id: '1', from: 'me', text: "Hi Sarah, I've submitted my application to your 12-Week Web3 Roadmap mentorship program. I'm interested in ZK Layer-2 designs.", ts: 'Jun 3', date: 'Jun 3' },
       { id: '2', from: 'other', text: 'Hi John! I reviewed your background and it looks very interesting. Before accepting, could you share a link to your ZK implementation repos or explain your constraints reduction approach?', ts: 'Jun 5', date: 'Jun 5' },
     ],
   },
@@ -101,8 +116,8 @@ const INITIAL_CONVOS = [
       ]
     },
     messages: [
-      { id: '1', from: 'other', text: 'Hi! I\'ve reviewed the DAO Governance Dashboard mission brief. I have 3 years of experience building real-time dashboards with React and WebSocket integrations for blockchain data.', ts: '09:30', date: 'Today' },
-      { id: '2', from: 'other', text: 'My bid is 1,500 BTS with a 16-day delivery timeline. I\'d structure the work in 3 milestones. Please see the attached brief.', ts: '09:31', date: 'Today' },
+      { id: '1', from: 'other', text: "Hi! I've reviewed the DAO Governance Dashboard mission brief. I have 3 years of experience building real-time dashboards with React and WebSocket integrations for blockchain data.", ts: '09:30', date: 'Today' },
+      { id: '2', from: 'other', text: "My bid is 1,500 BTS with a 16-day delivery timeline. I'd structure the work in 3 milestones. Please see the attached brief.", ts: '09:31', date: 'Today' },
     ],
   },
   {
@@ -122,11 +137,11 @@ const INITIAL_CONVOS = [
       status: 'counter_proposed',
       history: [
         { date: 'Jun 8', action: 'Submitted Bid', actor: 'me', details: 'Bid: 1,200 BTS, Timeline: 14 days' },
-        { date: 'Jun 10', action: 'Counter-Offer Recieved', actor: 'DeFi Nexus', details: 'Counter-bid: 1,000 BTS, Timeline: 10 days' }
+        { date: 'Jun 10', action: 'Counter-Offer Received', actor: 'DeFi Nexus', details: 'Counter-bid: 1,000 BTS, Timeline: 10 days' }
       ]
     },
     messages: [
-      { id: '1', from: 'me', text: 'Hi DeFi Nexus! I\'ve completed 12 Solidity audits and would love to review your code. My bid is 1,200 BTS across 14 days.', ts: 'Jun 8', date: 'Jun 8' },
+      { id: '1', from: 'me', text: "Hi DeFi Nexus! I've completed 12 Solidity audits and would love to review your code. My bid is 1,200 BTS across 14 days.", ts: 'Jun 8', date: 'Jun 8' },
       { id: '2', from: 'other', text: 'Thanks John. We like your profile, but our budget is tight. Could you do it for 1,000 BTS and complete it in 10 days?', ts: 'Jun 10', date: 'Jun 10' },
     ],
   },
@@ -160,25 +175,57 @@ const INITIAL_CONVOS = [
   },
 ];
 
-export function getConversations() {
-  const data = localStorage.getItem('bts_conversations');
-  if (!data) {
-    localStorage.setItem('bts_conversations', JSON.stringify(INITIAL_CONVOS));
+// ── Module-level cache ─────────────────────────────────────────────────────────
+let _cache = (() => {
+  try {
+    const raw = localStorage.getItem('bts_conversations');
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_CONVOS;
+  } catch (_) {
     return INITIAL_CONVOS;
   }
-  return JSON.parse(data);
+})();
+
+function _setCache(convos) {
+  _cache = Array.isArray(convos) ? convos : [];
+  try {
+    localStorage.setItem('bts_conversations', JSON.stringify(_cache));
+  } catch (_) {}
+  window.dispatchEvent(new CustomEvent('bts_conversations_change', { detail: _cache }));
 }
 
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/** Synchronous read from in-memory cache. */
+export function getConversations() {
+  return _cache;
+}
+
+/** Fetch conversations from the server and refresh cache. */
+export async function fetchConversationsFromServer() {
+  try {
+    const data = await apiGet('/api/conversations');
+    if (Array.isArray(data) && data.length > 0) {
+      _setCache(data);
+    }
+  } catch (err) {
+    console.warn('[messagesStorage] fetchConversations failed:', err.message);
+  }
+  return _cache;
+}
+
+/** Persist conversations array to server. */
 export function saveConversations(convos) {
-  localStorage.setItem('bts_conversations', JSON.stringify(convos));
+  _setCache(convos);
+  // Fire-and-forget: sync each new convo to server
+  // (full-array replace is handled via /api/sync for large payloads)
 }
 
-export function addRequestConvo({ mentorName, mentorAvatar, topic, price, date, duration, message }) {
-  const convos = getConversations();
-  const newId = `req-${Date.now()}`;
+/** Create a new request conversation (outgoing private session request). */
+export async function addRequestConvo({ mentorName, mentorAvatar, topic, price, date, duration, message }) {
   const nowTs = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
   const newConvo = {
-    id: newId,
+    id: `req-${Date.now()}`,
     category: 'requests',
     contact: {
       name: mentorName,
@@ -205,9 +252,17 @@ export function addRequestConvo({ mentorName, mentorAvatar, topic, price, date, 
       { id: `m-${Date.now()}`, from: 'me', text: message, ts: nowTs, date: 'Today' }
     ]
   };
-  convos.push(newConvo);
-  saveConversations(convos);
-  
+
+  // Optimistic update
+  _setCache([..._cache, newConvo]);
+
+  // Persist to server
+  try {
+    await apiPost('/api/conversations', { peerId: mentorName, ...newConvo });
+  } catch (err) {
+    console.warn('[messagesStorage] addRequestConvo server call failed:', err.message);
+  }
+
   addNotification({
     category: 'mentorship',
     title: 'Private Session Request Sent',
@@ -218,12 +273,11 @@ export function addRequestConvo({ mentorName, mentorAvatar, topic, price, date, 
   return newConvo;
 }
 
-export function addProposalConvo({ clientName, clientAvatar, missionName, bid, timeline, message }) {
-  const convos = getConversations();
-  const newId = `prop-${Date.now()}`;
+/** Create a new proposal conversation (outgoing freelance bid). */
+export async function addProposalConvo({ clientName, clientAvatar, missionName, bid, timeline, message }) {
   const nowTs = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
   const newConvo = {
-    id: newId,
+    id: `prop-${Date.now()}`,
     category: 'proposals',
     contact: {
       name: clientName,
@@ -251,9 +305,15 @@ export function addProposalConvo({ clientName, clientAvatar, missionName, bid, t
       { id: `m-${Date.now()}`, from: 'me', text: message, ts: nowTs, date: 'Today' }
     ]
   };
-  convos.push(newConvo);
-  saveConversations(convos);
-  
+
+  _setCache([..._cache, newConvo]);
+
+  try {
+    await apiPost('/api/conversations', { peerId: clientName, ...newConvo });
+  } catch (err) {
+    console.warn('[messagesStorage] addProposalConvo server call failed:', err.message);
+  }
+
   addNotification({
     category: 'dlancer',
     title: 'Proposal Bid Submitted',
@@ -264,10 +324,10 @@ export function addProposalConvo({ clientName, clientAvatar, missionName, bid, t
   return newConvo;
 }
 
-export function addDisputeConvo({ opponentName, missionName, disputeType, amount, priority, description }) {
-  const convos = getConversations();
-  const newId = `disp-${Date.now()}`;
+/** Create a new dispute conversation. */
+export async function addDisputeConvo({ opponentName, missionName, disputeType, amount, priority, description }) {
   const nowTs = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const newId = `disp-${Date.now()}`;
   const newConvo = {
     id: newId,
     category: 'disputes',
@@ -298,9 +358,15 @@ export function addDisputeConvo({ opponentName, missionName, disputeType, amount
       { id: `sys-${Date.now()}`, from: 'system', text: `⚖️ Dispute has been opened. Please submit evidence documents inside the case panel.`, ts: nowTs, date: 'Today' }
     ]
   };
-  convos.push(newConvo);
-  saveConversations(convos);
-  
+
+  _setCache([..._cache, newConvo]);
+
+  try {
+    await apiPost('/api/conversations', newConvo);
+  } catch (err) {
+    console.warn('[messagesStorage] addDisputeConvo server call failed:', err.message);
+  }
+
   addNotification({
     category: 'disputes',
     title: 'Dispute Arbitration Opened',
@@ -309,4 +375,32 @@ export function addDisputeConvo({ opponentName, missionName, disputeType, amount
   });
 
   return newConvo;
+}
+
+/** Send a message in a conversation (POST /api/conversations/:id/messages). */
+export async function sendMessage(convoId, content) {
+  const nowTs = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const optimistic = { id: `m-${Date.now()}`, from: 'me', text: content, ts: nowTs, date: 'Today' };
+
+  // Optimistic update
+  _setCache(_cache.map(c =>
+    c.id === convoId
+      ? { ...c, messages: [...(c.messages || []), optimistic] }
+      : c
+  ));
+
+  try {
+    await apiPost(`/api/conversations/${convoId}/messages`, { content, type: 'text' });
+  } catch (err) {
+    console.warn('[messagesStorage] sendMessage failed:', err.message);
+  }
+
+  return optimistic;
+}
+
+/** Mark a message as read. */
+export async function markMessageRead(convoId, msgId) {
+  try {
+    await apiPatch(`/api/conversations/${convoId}/messages/${msgId}/read`);
+  } catch (_) {}
 }

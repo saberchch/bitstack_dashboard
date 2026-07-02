@@ -32,6 +32,14 @@ export default function DInstitute() {
     localStorage.setItem('bts_institute_registrations', JSON.stringify(registrations));
   }, [registrations]);
 
+  useEffect(() => {
+    const handleRegistrationsChange = (e) => {
+      if (e.detail) setRegistrations(e.detail);
+    };
+    window.addEventListener('bts_institute_registrations_change', handleRegistrationsChange);
+    return () => window.removeEventListener('bts_institute_registrations_change', handleRegistrationsChange);
+  }, []);
+
   const handleRegister = (id) => {
     if (registrations.includes(id)) {
       setRegistrations(registrations.filter(r => r !== id));

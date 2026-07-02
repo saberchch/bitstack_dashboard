@@ -262,6 +262,20 @@ export default function Messages() {
     saveConversations(convos);
   }, [convos]);
 
+  useEffect(() => {
+    const handleConvosChange = (e) => {
+      if (e.detail) {
+        const serverConvosStr = JSON.stringify(e.detail);
+        const currentConvosStr = JSON.stringify(convos);
+        if (serverConvosStr !== currentConvosStr) {
+          setConvos(e.detail);
+        }
+      }
+    };
+    window.addEventListener('bts_conversations_change', handleConvosChange);
+    return () => window.removeEventListener('bts_conversations_change', handleConvosChange);
+  }, [convos]);
+
   const [activeCat, setActiveCat] = useState('direct');
   const [activeId, setActiveId] = useState('d1');
   const [search, setSearch] = useState('');

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { bookPrivateSession } from '../utils/enrollmentStorage';
 import { addRequestConvo } from '../utils/messagesStorage';
+import { getBalance, deductBalance, checkAffordability } from '../utils/balanceStorage';
 
 export default function BookingModal({ 
   isOpen, 
@@ -18,7 +19,8 @@ export default function BookingModal({
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  const userBalance = 2450.75;
+  // Live balance – re-read on every render so it stays current after deductions
+  const userBalance = getBalance();
 
   // Sync state with props when modal opens or inputs change
   useEffect(() => {
@@ -37,9 +39,9 @@ export default function BookingModal({
   if (!isOpen || !mentor) return null;
 
   const totalCost = duration * mentor.rate;
-  const hasEnoughBalance = userBalance >= totalCost;
+  const { affordable: hasEnoughBalance } = checkAffordability(totalCost);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!topic.trim()) {
       setError("Please specify the session topic.");
@@ -54,12 +56,18 @@ export default function BookingModal({
       return;
     }
 
+    // Re-check balance just before submitting (may have changed between renders)
+    const deduction = deductBalance(totalCost, `Private session with ${mentor.name}`);
+    if (!deduction.ok) {
+      setError(deduction.error);
+      return;
+    }
+
     setError("");
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      bookPrivateSession({
+    try {
+      await bookPrivateSession({
         mentorId: mentor.id,
         mentorName: mentor.name,
         mentorAvatar: mentor.avatar,
@@ -81,9 +89,13 @@ export default function BookingModal({
         message: description || `Hi ${mentor.name}, I would like to request a private session on "${topic}" on May ${date} at ${slot}.`
       });
 
-      setIsSubmitting(false);
       setIsSuccess(true);
-    }, 1200);
+    } catch (err) {
+      console.error('[BookingModal] Failed to create booking:', err);
+      setError('Failed to submit booking. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -125,8 +137,8 @@ export default function BookingModal({
                 <span className="font-extrabold text-bts-gold">{totalCost} BTS</span>
               </div>
               <div className="flex justify-between items-center text-xs pt-2.5">
-                <span className="text-gray-400 font-semibold">New Balance (Pending)</span>
-                <span className="font-bold text-brand-dark">{(userBalance - totalCost).toFixed(2)} BTS</span>
+                <span className="text-gray-400 font-semibold">New Balance</span>
+                <span className="font-bold text-brand-dark">{(userBalance - totalCost).toLocaleString()} BTS</span>
               </div>
             </div>
 
@@ -256,22 +268,42 @@ export default function BookingModal({
             </div>
 
             {/* Pricing Summary */}
-            <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 divide-y divide-gray-200/50 space-y-2.5">
+            <div className={`border rounded-xl p-4 divide-y space-y-2.5 ${
+              hasEnoughBalance
+                ? 'bg-gray-50 border-gray-100 divide-gray-200/50'
+                : 'bg-red-50 border-red-100 divide-red-100'
+            }`}>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-400 font-semibold">User Balance</span>
-                <span className="font-bold text-brand-dark">{userBalance.toFixed(2)} BTS</span>
+                <span className="text-gray-400 font-semibold">Your Balance</span>
+                <span className="font-bold text-brand-dark">{userBalance.toLocaleString()} BTS</span>
               </div>
               <div className="flex justify-between items-center text-xs pt-2.5">
                 <span className="text-gray-400 font-semibold">Session Cost ({duration} hr × {mentor.rate} BTS)</span>
-                <span className="font-extrabold text-bts-gold">-{totalCost} BTS</span>
+                <span className="font-extrabold text-bts-gold">-{totalCost.toLocaleString()} BTS</span>
               </div>
               <div className="flex justify-between items-center text-xs pt-2.5">
                 <span className="text-gray-400 font-semibold">Remaining Balance</span>
-                <span className={`font-bold ${hasEnoughBalance ? 'text-brand-dark' : 'text-red-500 font-extrabold'}`}>
-                  {(userBalance - totalCost).toFixed(2)} BTS
+                <span className={`font-bold ${
+                  hasEnoughBalance ? 'text-brand-dark' : 'text-red-600 font-extrabold'
+                }`}>
+                  {hasEnoughBalance
+                    ? `${(userBalance - totalCost).toLocaleString()} BTS`
+                    : `Shortfall: ${(totalCost - userBalance).toLocaleString()} BTS`
+                  }
                 </span>
               </div>
             </div>
+
+            {/* Insufficient funds banner */}
+            {!hasEnoughBalance && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl p-3.5 text-xs text-red-600">
+                <span className="material-symbols-outlined !text-base shrink-0 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance_wallet</span>
+                <span>
+                  <strong>Insufficient BTS balance.</strong> You need {(totalCost - userBalance).toLocaleString()} more BTS to book this session.
+                  Top up your wallet via the <strong>BTS Credit</strong> section.
+                </span>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex items-center gap-3 pt-2">

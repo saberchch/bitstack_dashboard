@@ -304,6 +304,26 @@ export default function DLibrary() {
   useEffect(() => { localStorage.setItem('bts_library_purchased', JSON.stringify(purchasedIds)); }, [purchasedIds]);
   useEffect(() => { localStorage.setItem('bts_library_uploads', JSON.stringify(uploadedResources)); }, [uploadedResources]);
 
+  useEffect(() => {
+    const handleSavedChange = (e) => {
+      if (e.detail) setSavedIds(e.detail);
+    };
+    const handlePurchasedChange = (e) => {
+      if (e.detail) setPurchasedIds(e.detail);
+    };
+    const handleUploadsChange = (e) => {
+      if (e.detail) setUploadedResources(e.detail);
+    };
+    window.addEventListener('bts_library_saved_change', handleSavedChange);
+    window.addEventListener('bts_library_purchased_change', handlePurchasedChange);
+    window.addEventListener('bts_library_uploads_change', handleUploadsChange);
+    return () => {
+      window.removeEventListener('bts_library_saved_change', handleSavedChange);
+      window.removeEventListener('bts_library_purchased_change', handlePurchasedChange);
+      window.removeEventListener('bts_library_uploads_change', handleUploadsChange);
+    };
+  }, []);
+
   // Reset to page 1 when any search, sorting or filtering changes
   useEffect(() => {
     setCurrentPage(1);
